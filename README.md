@@ -21,6 +21,8 @@ No additional dependencies required!
 
 ## Installation
 
+### Option 1: Run as Python Script
+
 1. Clone this repository:
 ```bash
 git clone https://github.com/yourusername/Work-Logger.git
@@ -31,6 +33,51 @@ cd Work-Logger
 ```bash
 python3 --version
 ```
+
+### Option 2: Build Standalone Executable (Windows)
+
+If you want to run the application without Python installed, you can build a standalone .exe file:
+
+1. Clone this repository (if not already done):
+```bash
+git clone https://github.com/yourusername/Work-Logger.git
+cd Work-Logger
+```
+
+2. Install PyInstaller (if not already installed):
+```bash
+pip install pyinstaller
+```
+
+3. Build the executable using one of these methods:
+
+   **Method A: Using the Python build script (recommended)**
+   ```bash
+   python build_exe.py
+   ```
+
+   **Method B: Using the Windows batch file**
+   ```batch
+   build_exe.bat
+   ```
+
+   **Method C: Manual build with PyInstaller**
+   ```bash
+   pyinstaller work_logger.spec
+   ```
+
+4. After building, find your executable at:
+   ```
+   dist/WorkLogger.exe
+   ```
+
+5. You can now:
+   - Double-click `WorkLogger.exe` to run the application
+   - Copy the .exe file anywhere on your computer
+   - Share it with others (no Python installation required!)
+   - Add it to your Windows Startup folder for automatic launch
+
+**Note:** The .exe file is completely standalone and doesn't require Python to be installed. However, it will only work on Windows. For macOS or Linux, use the Python script method.
 
 ## Usage
 
@@ -145,6 +192,12 @@ Use Automator to create a Launch Agent or add to Login Items in System Preferenc
 
 ### Running on Startup (Windows)
 
+**If using the .exe file:**
+1. Build the executable (see Installation section)
+2. Press `Win+R`, type `shell:startup`, press Enter
+3. Copy `WorkLogger.exe` or create a shortcut to it in the Startup folder
+
+**If using the Python script:**
 1. Create a shortcut to `work_logger.py`
 2. Press `Win+R`, type `shell:startup`, press Enter
 3. Move the shortcut to the Startup folder
