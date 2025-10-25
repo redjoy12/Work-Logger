@@ -1,0 +1,13 @@
+# Work Logger - Requirements
+# This application uses only Python standard library modules
+
+# No external dependencies required!
+# The application uses:
+# - tkinter (comes pre-installed with Python)
+# - json (standard library)
+# - datetime (standard library)
+# - threading (standard library)
+# - os (standard library)
+
+# For development/testing (optional):
+# pytest>=7.0.0
