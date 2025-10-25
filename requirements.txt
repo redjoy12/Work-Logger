@@ -9,5 +9,8 @@
 # - threading (standard library)
 # - os (standard library)
 
+# For building executable (optional):
+pyinstaller>=6.0.0
+
 # For development/testing (optional):
 # pytest>=7.0.0
