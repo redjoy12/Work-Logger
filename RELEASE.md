@@ -11,25 +11,8 @@ When users click the "Check for Updates" button in the app:
 
 ## Creating a New Release (Fully Automated!)
 
-We have **two automated methods** for creating releases. Choose the one you prefer:
+Simply run one command and answer a few questions:
 
-### Method 1: Interactive Script (Recommended)
-
-The simplest way! Just run one command and answer a few questions:
-
-**Windows:**
-```batch
-release.bat
-```
-Double-click `release.bat` or run it from command prompt.
-
-**Linux/macOS:**
-```bash
-chmod +x release.sh
-./release.sh
-```
-
-**Or directly:**
 ```bash
 python create_release.py
 ```
@@ -47,30 +30,8 @@ The script will:
 
 **That's it!** In 5-10 minutes, users can update via "Check for Updates"!
 
-### Method 2: Config File (Even Simpler!)
-
-For those who prefer editing a file over typing into a terminal:
-
-1. **Create/Edit** `release_config.json`:
-   ```json
-   {
-     "version": "1.1.0",
-     "release_notes": "## Features\n- New dark mode\n- Export to CSV\n\n## Bug Fixes\n- Fixed crash on startup"
-   }
-   ```
-
-2. **Run the quick release script:**
-   ```bash
-   python quick_release.py
-   ```
-
-3. **Confirm** and it's done!
-
-The config file will be automatically archived after use so you start fresh next time.
-
 ### Prerequisites
 
-Both methods require:
 - **GitHub CLI (`gh`)** to be installed and authenticated
 - **Clean git working directory** (no uncommitted changes)
 
@@ -98,7 +59,7 @@ gh auth login
 
 ### What Happens Automatically
 
-Once you run either script:
+Once you run the script:
 
 1. ✓ Version updated in `work_logger.py`
 2. ✓ Changes committed with message "Bump version to X.X.X"

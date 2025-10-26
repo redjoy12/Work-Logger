@@ -68,19 +68,12 @@ cd Work-Logger
 pip install pyinstaller
 ```
 
-3. Build the executable using one of these methods:
-
-   **Method A: Using the Python build script (recommended)**
+3. Build the executable:
    ```bash
    python build_exe.py
    ```
 
-   **Method B: Using the Windows batch file**
-   ```batch
-   build_exe.bat
-   ```
-
-   **Method C: Manual build with PyInstaller**
+   Or manually with PyInstaller:
    ```bash
    pyinstaller work_logger.spec
    ```
@@ -238,21 +231,8 @@ Use Automator to create a Launch Agent or add to Login Items in System Preferenc
 
 ## For Developers: Creating Releases
 
-Creating a new release is **fully automated**! Just run one script:
+Creating a new release is **fully automated**! Just run:
 
-### Quick Start
-
-**Windows** (double-click or run):
-```batch
-release.bat
-```
-
-**Linux/macOS**:
-```bash
-./release.sh
-```
-
-**Direct**:
 ```bash
 python create_release.py
 ```
@@ -264,22 +244,7 @@ The script will:
 4. GitHub Actions builds executables for Windows, Linux, and macOS
 5. Users can update via "Check for Updates" button!
 
-### Alternative: Config File Method
-
-Edit `release_config.json`:
-```json
-{
-  "version": "1.2.0",
-  "release_notes": "## Features\n- Cool new feature"
-}
-```
-
-Then run:
-```bash
-python quick_release.py
-```
-
-### What You Need
+### Prerequisites
 
 - **GitHub CLI** (`gh`) installed and authenticated
   - Windows: `winget install GitHub.cli`
