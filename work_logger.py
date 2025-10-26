@@ -8,9 +8,20 @@ import tkinter as tk
 from tkinter import ttk, messagebox, scrolledtext
 import json
 import os
+import sys
 from datetime import datetime, timedelta
 from threading import Thread, Event
 import time
+
+# Version information
+VERSION = "1.0.0"
+
+# Import updater module
+try:
+    from updater import Updater
+    UPDATER_AVAILABLE = True
+except ImportError:
+    UPDATER_AVAILABLE = False
 
 
 class Task:
@@ -71,7 +82,7 @@ class WorkLogger:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("Work Logger")
+        self.root.title(f"Work Logger v{VERSION}")
         self.root.geometry("700x600")
 
         self.tasks = []
@@ -212,6 +223,14 @@ class WorkLogger:
             text="Test Reminder Now",
             command=self.show_reminder
         ).grid(row=0, column=3, padx=(10, 0))
+
+        # Add Update button if updater is available
+        if UPDATER_AVAILABLE:
+            ttk.Button(
+                settings_frame,
+                text="Check for Updates",
+                command=self.check_for_updates
+            ).grid(row=0, column=4, padx=(10, 0))
 
         # Update UI
         self.update_ui()
@@ -675,6 +694,190 @@ class WorkLogger:
             )
         except ValueError as e:
             messagebox.showerror("Invalid Interval", str(e))
+
+    def check_for_updates(self):
+        """Check for application updates from GitHub."""
+        if not UPDATER_AVAILABLE:
+            messagebox.showerror("Update Error", "Updater module is not available.")
+            return
+
+        # Create progress window
+        progress_window = tk.Toplevel(self.root)
+        progress_window.title("Checking for Updates")
+        progress_window.geometry("400x200")
+        progress_window.transient(self.root)
+        progress_window.grab_set()
+
+        frame = ttk.Frame(progress_window, padding="20")
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        status_label = ttk.Label(frame, text="Checking for updates...", font=("Arial", 10))
+        status_label.pack(pady=(0, 20))
+
+        progress_bar = ttk.Progressbar(frame, mode='indeterminate', length=300)
+        progress_bar.pack(pady=(0, 20))
+        progress_bar.start()
+
+        def check_updates_thread():
+            """Background thread to check for updates."""
+            try:
+                updater = Updater(VERSION)
+                is_available, latest_version, download_url, release_notes = updater.check_for_updates()
+
+                def update_ui_with_result():
+                    progress_bar.stop()
+                    progress_window.destroy()
+
+                    if is_available:
+                        # Show update available dialog
+                        self._show_update_dialog(latest_version, download_url, release_notes, updater)
+                    else:
+                        messagebox.showinfo(
+                            "No Updates Available",
+                            f"You are running the latest version (v{VERSION})."
+                        )
+
+                progress_window.after(0, update_ui_with_result)
+
+            except Exception as e:
+                def show_error():
+                    progress_bar.stop()
+                    progress_window.destroy()
+                    messagebox.showerror("Update Check Failed", str(e))
+
+                progress_window.after(0, show_error)
+
+        # Start background thread
+        Thread(target=check_updates_thread, daemon=True).start()
+
+    def _show_update_dialog(self, latest_version, download_url, release_notes, updater):
+        """Show dialog with update information and install option."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Update Available")
+        dialog.geometry("500x400")
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        frame = ttk.Frame(dialog, padding="20")
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        # Title
+        ttk.Label(
+            frame,
+            text=f"New Version Available: v{latest_version}",
+            font=("Arial", 12, "bold")
+        ).pack(pady=(0, 10))
+
+        ttk.Label(
+            frame,
+            text=f"Current Version: v{VERSION}",
+            font=("Arial", 10)
+        ).pack(pady=(0, 20))
+
+        # Release notes
+        ttk.Label(frame, text="Release Notes:", font=("Arial", 10, "bold")).pack(anchor=tk.W, pady=(0, 5))
+
+        notes_text = scrolledtext.ScrolledText(frame, height=10, wrap=tk.WORD)
+        notes_text.pack(fill=tk.BOTH, expand=True, pady=(0, 20))
+        notes_text.insert(tk.END, release_notes)
+        notes_text.config(state=tk.DISABLED)
+
+        def install_update():
+            """Download and install the update."""
+            dialog.destroy()
+
+            if download_url:
+                self._download_and_install_update(download_url, updater)
+            else:
+                # No direct download available - guide user to GitHub
+                response = messagebox.askyesno(
+                    "Manual Update Required",
+                    "Automatic update is not available for your platform.\n\n"
+                    f"Would you like to open the GitHub releases page to download v{latest_version} manually?"
+                )
+                if response:
+                    import webbrowser
+                    webbrowser.open(f"https://github.com/{updater.GITHUB_REPO}/releases/latest")
+
+        # Buttons
+        btn_frame = ttk.Frame(frame)
+        btn_frame.pack()
+
+        ttk.Button(btn_frame, text="Install Update", command=install_update).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="Later", command=dialog.destroy).pack(side=tk.LEFT, padx=5)
+
+    def _download_and_install_update(self, download_url, updater):
+        """Download and install the update with progress indication."""
+        # Create progress window
+        progress_window = tk.Toplevel(self.root)
+        progress_window.title("Installing Update")
+        progress_window.geometry("400x150")
+        progress_window.transient(self.root)
+        progress_window.grab_set()
+
+        frame = ttk.Frame(progress_window, padding="20")
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        status_label = ttk.Label(frame, text="Downloading update...", font=("Arial", 10))
+        status_label.pack(pady=(0, 20))
+
+        progress_var = tk.IntVar(value=0)
+        progress_bar = ttk.Progressbar(frame, mode='determinate', length=300, variable=progress_var, maximum=100)
+        progress_bar.pack()
+
+        def update_progress(percent):
+            """Update progress bar."""
+            progress_var.set(percent)
+            status_label.config(text=f"Downloading update... {percent}%")
+
+        def download_and_install_thread():
+            """Background thread to download and install update."""
+            try:
+                # Download
+                downloaded_file = updater.download_update(download_url, progress_callback=update_progress)
+
+                def install_phase():
+                    status_label.config(text="Installing update...")
+                    progress_var.set(100)
+
+                progress_window.after(0, install_phase)
+
+                # Wait a moment for UI update
+                time.sleep(0.5)
+
+                # Install
+                success = updater.install_update(downloaded_file)
+
+                def show_success():
+                    progress_window.destroy()
+                    if success:
+                        if updater.is_frozen:
+                            messagebox.showinfo(
+                                "Update Complete",
+                                "The application will now restart to complete the update."
+                            )
+                            # The updater script will restart the app
+                            self.root.destroy()
+                            sys.exit(0)
+                        else:
+                            messagebox.showinfo(
+                                "Update Complete",
+                                "The application has been updated. Please restart the application."
+                            )
+                            self.root.destroy()
+                            sys.exit(0)
+
+                progress_window.after(0, show_success)
+
+            except Exception as e:
+                def show_error():
+                    progress_window.destroy()
+                    messagebox.showerror("Update Failed", f"Failed to install update: {str(e)}")
+
+                progress_window.after(0, show_error)
+
+        # Start background thread
+        Thread(target=download_and_install_thread, daemon=True).start()
 
     def on_closing(self):
         """Handle application closing."""
