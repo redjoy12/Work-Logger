@@ -158,18 +158,31 @@ class ReleaseAutomation:
             # Stage the modified file
             subprocess.run(['git', 'add', str(self.work_logger_path)], check=True)
 
+            # Check if there are changes to commit
+            result = subprocess.run(
+                ['git', 'diff', '--cached', '--quiet'],
+                capture_output=True
+            )
+
+            if result.returncode == 0:
+                # No changes staged
+                print(f"✗ No changes to commit. Version may already be {version}")
+                return False
+
             # Commit
             commit_message = f"Bump version to {version}"
-            subprocess.run(['git', 'commit', '-m', commit_message], check=True)
+            subprocess.run(['git', 'commit', '-m', commit_message], check=True, capture_output=True, text=True)
             print(f"✓ Committed version change")
 
             # Push to main
-            subprocess.run(['git', 'push', 'origin', 'main'], check=True)
+            subprocess.run(['git', 'push', 'origin', 'main'], check=True, capture_output=True, text=True)
             print(f"✓ Pushed to origin/main")
 
             return True
         except subprocess.CalledProcessError as e:
             print(f"✗ Git operation failed: {e}")
+            if hasattr(e, 'stderr') and e.stderr:
+                print(f"Error details: {e.stderr}")
             return False
 
     def _create_github_release(self, version, release_notes):
@@ -184,7 +197,7 @@ class ReleaseAutomation:
                 '--notes', release_notes
             ]
 
-            subprocess.run(cmd, check=True)
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True)
             print(f"✓ Created GitHub release: {tag}")
             print()
             print("GitHub Actions is now building executables...")
@@ -198,6 +211,16 @@ class ReleaseAutomation:
             return True
         except subprocess.CalledProcessError as e:
             print(f"✗ Failed to create release: {e}")
+            if e.stderr:
+                print(f"\nError output:")
+                print(e.stderr)
+            if e.stdout:
+                print(f"\nStandard output:")
+                print(e.stdout)
+            print("\nPossible issues:")
+            print("  1. GitHub CLI (gh) not authenticated - run: gh auth login")
+            print("  2. No permission to create releases in this repository")
+            print("  3. Tag might already exist - check: gh release list")
             return False
 
     def create_release(self):
@@ -214,6 +237,12 @@ class ReleaseAutomation:
 
         # Get user input
         new_version, release_notes = self._get_user_input()
+
+        # Validate that version is different
+        if new_version == self.current_version:
+            print(f"\n✗ Error: New version ({new_version}) is the same as current version.")
+            print("Please specify a different version number.")
+            return False
 
         # Confirm
         print("\n" + "=" * 60)
