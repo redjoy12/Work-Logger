@@ -158,6 +158,17 @@ class ReleaseAutomation:
             # Stage the modified file
             subprocess.run(['git', 'add', str(self.work_logger_path)], check=True)
 
+            # Check if there are changes to commit
+            result = subprocess.run(
+                ['git', 'diff', '--cached', '--quiet'],
+                capture_output=True
+            )
+
+            if result.returncode == 0:
+                # No changes staged
+                print(f"✗ No changes to commit. Version may already be {version}")
+                return False
+
             # Commit
             commit_message = f"Bump version to {version}"
             subprocess.run(['git', 'commit', '-m', commit_message], check=True)
@@ -214,6 +225,12 @@ class ReleaseAutomation:
 
         # Get user input
         new_version, release_notes = self._get_user_input()
+
+        # Validate that version is different
+        if new_version == self.current_version:
+            print(f"\n✗ Error: New version ({new_version}) is the same as current version.")
+            print("Please specify a different version number.")
+            return False
 
         # Confirm
         print("\n" + "=" * 60)
