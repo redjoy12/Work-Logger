@@ -67,7 +67,7 @@ class Task:
 class WorkLogger:
     """Main application class for Work Logger."""
 
-    DATA_FILE = 'work_log.json'
+    LOGS_DIR = 'logs'
 
     def __init__(self, root):
         self.root = root
@@ -79,6 +79,13 @@ class WorkLogger:
         self.reminder_interval = 60 * 60  # 60 minutes in seconds (configurable)
         self.reminder_thread = None
         self.stop_reminder = Event()
+
+        # Create logs directory if it doesn't exist
+        if not os.path.exists(self.LOGS_DIR):
+            os.makedirs(self.LOGS_DIR)
+
+        # Migrate old data format if needed
+        self.migrate_old_data()
 
         self.load_tasks()
         self.setup_ui()
@@ -155,7 +162,27 @@ class WorkLogger:
             wrap=tk.WORD,
             state=tk.DISABLED
         )
-        self.history_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        self.history_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
+
+        # Buttons for task management
+        history_btn_frame = ttk.Frame(history_frame)
+        history_btn_frame.grid(row=1, column=0, sticky=tk.W)
+
+        ttk.Button(
+            history_btn_frame,
+            text="Edit Selected Task",
+            command=self.edit_task
+        ).grid(row=0, column=0, padx=(0, 5))
+
+        ttk.Button(
+            history_btn_frame,
+            text="Delete Selected Task",
+            command=self.delete_task
+        ).grid(row=0, column=1, padx=(0, 5))
+
+        # Enable text selection
+        self.history_text.bind("<Button-1>", self.on_history_click)
+        self.selected_task_index = None
 
         # Settings Section
         settings_frame = ttk.Frame(main_frame)
@@ -251,10 +278,18 @@ class WorkLogger:
         self.history_text.config(state=tk.NORMAL)
         self.history_text.delete(1.0, tk.END)
 
+        # Store task line mapping for selection
+        self.task_line_map = {}
+
         if not self.tasks:
             self.history_text.insert(tk.END, "No tasks logged yet.")
         else:
             for i, task in enumerate(reversed(self.tasks), 1):
+                # Store the line number for this task
+                line_start = self.history_text.index(tk.INSERT)
+                actual_index = len(self.tasks) - i  # Index in self.tasks list
+                self.task_line_map[int(line_start.split('.')[0])] = actual_index
+
                 start = datetime.fromisoformat(task.start_time)
                 status = "✓ Completed" if task.completed else "⏱ In Progress"
 
@@ -279,31 +314,242 @@ class WorkLogger:
 
         self.history_text.config(state=tk.DISABLED)
 
-    def save_tasks(self):
-        """Save tasks to JSON file."""
-        data = {
-            'tasks': [task.to_dict() for task in self.tasks],
-            'current_task_index': self.tasks.index(self.current_task) if self.current_task in self.tasks else None
-        }
+    def on_history_click(self, event):
+        """Handle clicks in history text to select tasks."""
+        # Get the line number that was clicked
+        index = self.history_text.index(f"@{event.x},{event.y}")
+        line_num = int(index.split('.')[0])
 
-        with open(self.DATA_FILE, 'w') as f:
-            json.dump(data, f, indent=2)
+        # Find which task this line belongs to
+        for task_line, task_index in self.task_line_map.items():
+            # Check if click is within task's lines (each task takes about 5-6 lines)
+            if task_line <= line_num < task_line + 6:
+                self.selected_task_index = task_index
+                # Highlight the selection
+                self.highlight_selected_task(task_line)
+                return
 
-    def load_tasks(self):
-        """Load tasks from JSON file."""
-        if os.path.exists(self.DATA_FILE):
+    def highlight_selected_task(self, start_line):
+        """Highlight the selected task in the history."""
+        self.history_text.tag_remove("highlight", "1.0", tk.END)
+        self.history_text.tag_add("highlight", f"{start_line}.0", f"{start_line + 6}.0")
+        self.history_text.tag_config("highlight", background="lightblue")
+
+    def edit_task(self):
+        """Edit the selected task."""
+        if self.selected_task_index is None:
+            messagebox.showwarning("No Selection", "Please click on a task to select it first.")
+            return
+
+        task = self.tasks[self.selected_task_index]
+
+        # Create edit dialog
+        edit_window = tk.Toplevel(self.root)
+        edit_window.title("Edit Task")
+        edit_window.geometry("500x300")
+
+        frame = ttk.Frame(edit_window, padding="20")
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        # Task description
+        ttk.Label(frame, text="Task Description:", font=("Arial", 10, "bold")).pack(anchor=tk.W, pady=(0, 5))
+        desc_text = scrolledtext.ScrolledText(frame, height=5, wrap=tk.WORD)
+        desc_text.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
+        desc_text.insert(tk.END, task.description)
+
+        # Start time
+        ttk.Label(frame, text="Start Time:", font=("Arial", 10, "bold")).pack(anchor=tk.W, pady=(0, 5))
+        start_var = tk.StringVar(value=task.start_time)
+        start_entry = ttk.Entry(frame, textvariable=start_var, width=40)
+        start_entry.pack(anchor=tk.W, pady=(0, 10))
+
+        # End time (if completed)
+        if task.completed:
+            ttk.Label(frame, text="End Time:", font=("Arial", 10, "bold")).pack(anchor=tk.W, pady=(0, 5))
+            end_var = tk.StringVar(value=task.end_time or "")
+            end_entry = ttk.Entry(frame, textvariable=end_var, width=40)
+            end_entry.pack(anchor=tk.W, pady=(0, 10))
+
+        def save_changes():
+            new_desc = desc_text.get("1.0", tk.END).strip()
+            if not new_desc:
+                messagebox.showwarning("Empty Description", "Task description cannot be empty.")
+                return
+
+            # Validate timestamps
             try:
-                with open(self.DATA_FILE, 'r') as f:
+                datetime.fromisoformat(start_var.get())
+                if task.completed and end_var.get():
+                    datetime.fromisoformat(end_var.get())
+            except ValueError:
+                messagebox.showerror("Invalid Time", "Invalid timestamp format. Use ISO format: YYYY-MM-DD HH:MM:SS")
+                return
+
+            # Update task
+            task.description = new_desc
+            task.start_time = start_var.get()
+            if task.completed and end_var.get():
+                task.end_time = end_var.get()
+
+            self.save_tasks()
+            self.update_ui()
+            edit_window.destroy()
+            messagebox.showinfo("Success", "Task updated successfully!")
+
+        # Buttons
+        btn_frame = ttk.Frame(frame)
+        btn_frame.pack(pady=(10, 0))
+
+        ttk.Button(btn_frame, text="Save Changes", command=save_changes).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="Cancel", command=edit_window.destroy).pack(side=tk.LEFT, padx=5)
+
+    def delete_task(self):
+        """Delete the selected task."""
+        if self.selected_task_index is None:
+            messagebox.showwarning("No Selection", "Please click on a task to select it first.")
+            return
+
+        task = self.tasks[self.selected_task_index]
+
+        # Confirm deletion
+        response = messagebox.askyesno(
+            "Confirm Deletion",
+            f"Are you sure you want to delete this task?\n\n\"{task.description}\""
+        )
+
+        if response:
+            # Check if it's the current task
+            if task == self.current_task:
+                self.current_task = None
+
+            # Remove task from list
+            self.tasks.pop(self.selected_task_index)
+            self.selected_task_index = None
+
+            self.save_tasks()
+            self.update_ui()
+            messagebox.showinfo("Success", "Task deleted successfully!")
+
+    def get_log_file_path(self, date):
+        """Get the log file path for a specific date."""
+        date_str = date.strftime('%Y-%m-%d')
+        return os.path.join(self.LOGS_DIR, f"{date_str}.json")
+
+    def save_tasks(self):
+        """Save tasks to daily JSON files."""
+        # Group tasks by date
+        tasks_by_date = {}
+        for task in self.tasks:
+            task_date = datetime.fromisoformat(task.start_time).date()
+            date_str = task_date.strftime('%Y-%m-%d')
+            if date_str not in tasks_by_date:
+                tasks_by_date[date_str] = []
+            tasks_by_date[date_str].append(task)
+
+        # Save each day's tasks to its own file
+        for date_str, day_tasks in tasks_by_date.items():
+            file_path = os.path.join(self.LOGS_DIR, f"{date_str}.json")
+            data = {
+                'date': date_str,
+                'tasks': [task.to_dict() for task in day_tasks]
+            }
+            with open(file_path, 'w') as f:
+                json.dump(data, f, indent=2)
+
+        # Save current task reference separately
+        current_task_file = os.path.join(self.LOGS_DIR, 'current_task.json')
+        current_data = {
+            'current_task': self.current_task.to_dict() if self.current_task and not self.current_task.completed else None
+        }
+        with open(current_task_file, 'w') as f:
+            json.dump(current_data, f, indent=2)
+
+    def migrate_old_data(self):
+        """Migrate data from old work_log.json format to new daily files format."""
+        OLD_DATA_FILE = 'work_log.json'
+
+        if os.path.exists(OLD_DATA_FILE):
+            try:
+                print("Migrating old data format to daily log files...")
+                with open(OLD_DATA_FILE, 'r') as f:
                     data = json.load(f)
 
-                self.tasks = [Task.from_dict(task_data) for task_data in data.get('tasks', [])]
+                tasks = [Task.from_dict(task_data) for task_data in data.get('tasks', [])]
 
-                current_index = data.get('current_task_index')
-                if current_index is not None and 0 <= current_index < len(self.tasks):
-                    self.current_task = self.tasks[current_index]
-                    # If loaded task is marked complete, set current to None
-                    if self.current_task.completed:
-                        self.current_task = None
+                if tasks:
+                    # Group tasks by date and save to daily files
+                    tasks_by_date = {}
+                    for task in tasks:
+                        task_date = datetime.fromisoformat(task.start_time).date()
+                        date_str = task_date.strftime('%Y-%m-%d')
+                        if date_str not in tasks_by_date:
+                            tasks_by_date[date_str] = []
+                        tasks_by_date[date_str].append(task)
+
+                    # Save to daily files
+                    for date_str, day_tasks in tasks_by_date.items():
+                        file_path = os.path.join(self.LOGS_DIR, f"{date_str}.json")
+                        file_data = {
+                            'date': date_str,
+                            'tasks': [task.to_dict() for task in day_tasks]
+                        }
+                        with open(file_path, 'w') as f:
+                            json.dump(file_data, f, indent=2)
+
+                    # Handle current task
+                    current_index = data.get('current_task_index')
+                    if current_index is not None and 0 <= current_index < len(tasks):
+                        current_task = tasks[current_index]
+                        if not current_task.completed:
+                            current_task_file = os.path.join(self.LOGS_DIR, 'current_task.json')
+                            current_data = {'current_task': current_task.to_dict()}
+                            with open(current_task_file, 'w') as f:
+                                json.dump(current_data, f, indent=2)
+
+                # Rename old file to backup
+                backup_file = 'work_log.json.backup'
+                os.rename(OLD_DATA_FILE, backup_file)
+                print(f"Migration complete! Old file backed up to {backup_file}")
+
+            except Exception as e:
+                print(f"Error during migration: {e}")
+
+    def load_tasks(self):
+        """Load tasks from all daily JSON files."""
+        self.tasks = []
+
+        # Load all log files from the logs directory
+        if os.path.exists(self.LOGS_DIR):
+            try:
+                log_files = sorted([f for f in os.listdir(self.LOGS_DIR) if f.endswith('.json') and f != 'current_task.json'])
+
+                for log_file in log_files:
+                    file_path = os.path.join(self.LOGS_DIR, log_file)
+                    try:
+                        with open(file_path, 'r') as f:
+                            data = json.load(f)
+                            tasks = [Task.from_dict(task_data) for task_data in data.get('tasks', [])]
+                            self.tasks.extend(tasks)
+                    except Exception as e:
+                        print(f"Error loading {log_file}: {e}")
+
+                # Sort tasks by start time
+                self.tasks.sort(key=lambda t: t.start_time)
+
+                # Load current task reference
+                current_task_file = os.path.join(self.LOGS_DIR, 'current_task.json')
+                if os.path.exists(current_task_file):
+                    with open(current_task_file, 'r') as f:
+                        current_data = json.load(f)
+                        current_task_dict = current_data.get('current_task')
+                        if current_task_dict:
+                            # Find the current task in the loaded tasks
+                            for task in self.tasks:
+                                if (task.start_time == current_task_dict['start_time'] and
+                                    task.description == current_task_dict['description']):
+                                    if not task.completed:
+                                        self.current_task = task
+                                    break
 
             except Exception as e:
                 messagebox.showerror("Load Error", f"Error loading tasks: {e}")
