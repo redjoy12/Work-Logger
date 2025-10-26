@@ -125,17 +125,24 @@ class ReleaseAutomation:
                 print("Invalid version format. Use MAJOR.MINOR.PATCH (e.g., 1.1.0)")
 
         # Get release notes
-        print("\nEnter release notes (press Ctrl+D or Ctrl+Z when done):")
-        print("You can use markdown formatting")
+        print("\nEnter release notes (you can use markdown formatting):")
+        print("Type 'END' on a new line when finished, or leave empty for default")
         print("-" * 60)
 
         release_notes = []
-        try:
-            while True:
+        while True:
+            try:
                 line = input()
+                # Check if user wants to finish
+                if line.strip().upper() == 'END':
+                    break
                 release_notes.append(line)
-        except EOFError:
-            pass
+            except EOFError:
+                # Handle Ctrl+D on Unix or Ctrl+Z on Windows
+                break
+            except KeyboardInterrupt:
+                # Handle Ctrl+C
+                raise
 
         release_notes = '\n'.join(release_notes).strip()
 
