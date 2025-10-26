@@ -34,7 +34,7 @@ class ReleaseAutomation:
     def _get_current_version(self):
         """Extract current version from work_logger.py."""
         try:
-            with open(self.work_logger_path, 'r') as f:
+            with open(self.work_logger_path, 'r', encoding='utf-8') as f:
                 content = f.read()
                 match = re.search(r'VERSION\s*=\s*["\']([^"\']+)["\']', content)
                 if match:
@@ -46,7 +46,7 @@ class ReleaseAutomation:
     def _update_version_in_file(self, new_version):
         """Update VERSION constant in work_logger.py."""
         try:
-            with open(self.work_logger_path, 'r') as f:
+            with open(self.work_logger_path, 'r', encoding='utf-8') as f:
                 content = f.read()
 
             # Replace the VERSION line
@@ -56,7 +56,7 @@ class ReleaseAutomation:
                 content
             )
 
-            with open(self.work_logger_path, 'w') as f:
+            with open(self.work_logger_path, 'w', encoding='utf-8') as f:
                 f.write(updated_content)
 
             print(f"✓ Updated VERSION to {new_version} in work_logger.py")
