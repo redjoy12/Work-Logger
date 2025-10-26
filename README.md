@@ -37,13 +37,29 @@ cd Work-Logger
 python3 --version
 ```
 
-### Option 2: Build Standalone Executable (Windows)
+### Option 2: Download Pre-built Executable (Recommended for Non-Developers)
 
-If you want to run the application without Python installed, you can build a standalone .exe file:
+The easiest way to use Work Logger is to download the pre-built executable:
+
+1. Go to the [Releases page](https://github.com/redjoy12/Work-Logger/releases/latest)
+2. Download the appropriate file for your operating system:
+   - **Windows**: `WorkLogger-vX.X.X-windows.exe`
+   - **Linux**: `WorkLogger-vX.X.X-linux.tar.gz`
+   - **macOS**: `WorkLogger-vX.X.X-macos.tar.gz`
+3. Run the executable:
+   - **Windows**: Double-click the .exe file
+   - **Linux/macOS**: Extract the archive and run the binary
+4. The app will automatically check for updates and can update itself!
+
+**Note:** Pre-built executables are automatically created by GitHub Actions whenever a new release is published.
+
+### Option 3: Build Standalone Executable Locally
+
+If you want to build the executable yourself or customize the build:
 
 1. Clone this repository (if not already done):
 ```bash
-git clone https://github.com/yourusername/Work-Logger.git
+git clone https://github.com/redjoy12/Work-Logger.git
 cd Work-Logger
 ```
 
@@ -71,16 +87,17 @@ pip install pyinstaller
 
 4. After building, find your executable at:
    ```
-   dist/WorkLogger.exe
+   dist/WorkLogger.exe  # Windows
+   dist/WorkLogger      # Linux/macOS
    ```
 
 5. You can now:
-   - Double-click `WorkLogger.exe` to run the application
-   - Copy the .exe file anywhere on your computer
+   - Double-click the executable to run the application
+   - Copy the file anywhere on your computer
    - Share it with others (no Python installation required!)
-   - Add it to your Windows Startup folder for automatic launch
+   - Add it to your system's Startup folder for automatic launch
 
-**Note:** The .exe file is completely standalone and doesn't require Python to be installed. However, it will only work on Windows. For macOS or Linux, use the Python script method.
+**Note:** The executable is completely standalone and doesn't require Python to be installed.
 
 ## Usage
 
@@ -218,6 +235,61 @@ Use Automator to create a Launch Agent or add to Login Items in System Preferenc
 1. Create a shortcut to `work_logger.py`
 2. Press `Win+R`, type `shell:startup`, press Enter
 3. Move the shortcut to the Startup folder
+
+## For Developers: Creating Releases
+
+Creating a new release is **fully automated**! Just run one script:
+
+### Quick Start
+
+**Windows** (double-click or run):
+```batch
+release.bat
+```
+
+**Linux/macOS**:
+```bash
+./release.sh
+```
+
+**Direct**:
+```bash
+python create_release.py
+```
+
+The script will:
+1. Ask for the new version number
+2. Ask for release notes
+3. Automatically update code, commit, push, and create GitHub release
+4. GitHub Actions builds executables for Windows, Linux, and macOS
+5. Users can update via "Check for Updates" button!
+
+### Alternative: Config File Method
+
+Edit `release_config.json`:
+```json
+{
+  "version": "1.2.0",
+  "release_notes": "## Features\n- Cool new feature"
+}
+```
+
+Then run:
+```bash
+python quick_release.py
+```
+
+### What You Need
+
+- **GitHub CLI** (`gh`) installed and authenticated
+  - Windows: `winget install GitHub.cli`
+  - macOS: `brew install gh`
+  - Linux: See [installation guide](https://github.com/cli/cli/blob/trunk/docs/install_linux.md)
+- Run `gh auth login` to authenticate
+
+That's it! The entire release process takes about 5-10 minutes.
+
+See [RELEASE.md](RELEASE.md) for detailed instructions and troubleshooting.
 
 ## Contributing
 

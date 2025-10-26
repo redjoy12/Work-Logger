@@ -1,0 +1,114 @@
+name: Build and Release
+
+on:
+  release:
+    types: [created]
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+
+      - name: Build executable
+        run: |
+          python build_exe.py
+
+      - name: Get release info
+        id: release_info
+        shell: bash
+        run: |
+          echo "upload_url=${{ github.event.release.upload_url }}" >> $GITHUB_OUTPUT
+          echo "tag_name=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+
+      - name: Upload Windows executable to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.release_info.outputs.upload_url }}
+          asset_path: ./dist/WorkLogger.exe
+          asset_name: WorkLogger-${{ steps.release_info.outputs.tag_name }}-windows.exe
+          asset_content_type: application/vnd.microsoft.portable-executable
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+
+      - name: Build executable
+        run: |
+          python build_exe.py
+
+      - name: Prepare Linux binary
+        run: |
+          chmod +x dist/WorkLogger
+          cd dist && tar -czf WorkLogger-linux.tar.gz WorkLogger
+
+      - name: Upload Linux executable to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./dist/WorkLogger-linux.tar.gz
+          asset_name: WorkLogger-${{ github.event.release.tag_name }}-linux.tar.gz
+          asset_content_type: application/gzip
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+
+      - name: Build executable
+        run: |
+          python build_exe.py
+
+      - name: Prepare macOS binary
+        run: |
+          chmod +x dist/WorkLogger
+          cd dist && tar -czf WorkLogger-macos.tar.gz WorkLogger
+
+      - name: Upload macOS executable to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./dist/WorkLogger-macos.tar.gz
+          asset_name: WorkLogger-${{ github.event.release.tag_name }}-macos.tar.gz
+          asset_content_type: application/gzip
