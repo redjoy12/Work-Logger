@@ -29,7 +29,7 @@ def read_config():
             "release_notes": "## Features\n- New feature here\n\n## Bug Fixes\n- Bug fix here"
         }
 
-        with open(config_path, 'w') as f:
+        with open(config_path, 'w', encoding='utf-8') as f:
             json.dump(template, f, indent=2)
 
         print(f"✓ Created {config_path}")
@@ -37,7 +37,7 @@ def read_config():
         return None
 
     try:
-        with open(config_path, 'r') as f:
+        with open(config_path, 'r', encoding='utf-8') as f:
             config = json.load(f)
 
         if 'version' not in config or 'release_notes' not in config:
