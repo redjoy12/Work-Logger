@@ -7,10 +7,13 @@ A desktop application that helps you track and document what you've been working
 - **Hourly Reminders**: Get pop-up notifications at regular intervals to remind you to document your work
 - **Task Tracking**: Log tasks with automatic timestamps
 - **Task Management**: Mark tasks as complete and start new ones seamlessly
-- **Persistent Storage**: All your work logs are saved automatically to a JSON file
+- **Persistent Storage**: All your work logs are saved automatically to daily JSON files
 - **Task History**: View your complete work history with timestamps and durations
 - **Customizable Intervals**: Set reminder intervals from 1 minute to 4 hours
 - **Attention-Grabbing Alerts**: Pop-up windows that appear on top and flash to get your attention
+- **Auto-Update**: Built-in automatic update checker that downloads and installs new versions from GitHub
+- **Edit & Delete Tasks**: Modify or remove tasks from your history
+- **Daily Log Files**: Tasks are organized into daily log files for better management
 
 ## Requirements
 
@@ -117,17 +120,31 @@ chmod +x work_logger.py
    - Click "Update Interval" to apply
    - Use "Test Reminder Now" to see what the reminder looks like
 
-5. **View Task History**:
+5. **Check for Updates**:
+   - Click "Check for Updates" button in the settings section
+   - The app will check GitHub for new releases
+   - If an update is available, you'll see release notes and can install it automatically
+   - For standalone .exe files, the app will download and replace itself
+   - For Python script mode, it will use git pull to update
+
+6. **View Task History**:
    - The bottom section shows all your logged tasks
    - View start/end times, durations, and completion status
+   - Click on any task to select it, then use "Edit Selected Task" or "Delete Selected Task"
 
 ### Data Storage
 
-All tasks are automatically saved to `work_log.json` in the application directory. This file contains:
+All tasks are automatically saved to daily JSON files in the `logs/` directory:
+- `logs/YYYY-MM-DD.json` - Tasks for each day
+- `logs/current_task.json` - Reference to the currently active task
+
+Each log file contains:
 - Task descriptions
 - Start and end timestamps
 - Completion status
 - Duration information
+
+The application automatically migrates old `work_log.json` format to the new daily files structure.
 
 ## Screenshots
 
@@ -219,9 +236,16 @@ Created to help developers and knowledge workers track their daily work activiti
 
 ## Changelog
 
-### Version 1.0.0 (Initial Release)
+### Version 1.0.0 (Current)
+- **Auto-Update Feature**: Built-in update checker and installer
+  - Checks GitHub releases for new versions
+  - Displays release notes before updating
+  - Automatically downloads and installs updates
+  - Works with both .exe files and Python scripts
+- **Task Management**: Edit and delete tasks
+- **Daily Log Files**: Tasks organized into daily JSON files
+- **Data Migration**: Automatic migration from old format
 - Basic task tracking functionality
-- Hourly reminder system
-- Task persistence
-- Task history view
-- Customizable reminder intervals
+- Hourly reminder system with customizable intervals
+- Task persistence with automatic saving
+- Complete task history view with timestamps and durations
