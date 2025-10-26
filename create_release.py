@@ -171,16 +171,18 @@ class ReleaseAutomation:
 
             # Commit
             commit_message = f"Bump version to {version}"
-            subprocess.run(['git', 'commit', '-m', commit_message], check=True)
+            subprocess.run(['git', 'commit', '-m', commit_message], check=True, capture_output=True, text=True)
             print(f"✓ Committed version change")
 
             # Push to main
-            subprocess.run(['git', 'push', 'origin', 'main'], check=True)
+            subprocess.run(['git', 'push', 'origin', 'main'], check=True, capture_output=True, text=True)
             print(f"✓ Pushed to origin/main")
 
             return True
         except subprocess.CalledProcessError as e:
             print(f"✗ Git operation failed: {e}")
+            if hasattr(e, 'stderr') and e.stderr:
+                print(f"Error details: {e.stderr}")
             return False
 
     def _create_github_release(self, version, release_notes):
@@ -195,7 +197,7 @@ class ReleaseAutomation:
                 '--notes', release_notes
             ]
 
-            subprocess.run(cmd, check=True)
+            result = subprocess.run(cmd, check=True, capture_output=True, text=True)
             print(f"✓ Created GitHub release: {tag}")
             print()
             print("GitHub Actions is now building executables...")
@@ -209,6 +211,16 @@ class ReleaseAutomation:
             return True
         except subprocess.CalledProcessError as e:
             print(f"✗ Failed to create release: {e}")
+            if e.stderr:
+                print(f"\nError output:")
+                print(e.stderr)
+            if e.stdout:
+                print(f"\nStandard output:")
+                print(e.stdout)
+            print("\nPossible issues:")
+            print("  1. GitHub CLI (gh) not authenticated - run: gh auth login")
+            print("  2. No permission to create releases in this repository")
+            print("  3. Tag might already exist - check: gh release list")
             return False
 
     def create_release(self):
