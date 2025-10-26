@@ -9,49 +9,106 @@ When users click the "Check for Updates" button in the app:
 2. If a new version is found, it downloads the appropriate executable (.exe for Windows, binaries for Linux/macOS)
 3. The app replaces itself with the new version and restarts
 
-## Creating a New Release (Automated Build)
+## Creating a New Release (Fully Automated!)
 
-Thanks to GitHub Actions, creating a new release is simple! Here's how:
+We have **two automated methods** for creating releases. Choose the one you prefer:
 
-### Step 1: Update the Version Number
+### Method 1: Interactive Script (Recommended)
 
-Edit `work_logger.py` and update the VERSION constant:
+The simplest way! Just run one command and answer a few questions:
 
-```python
-VERSION = "1.1.0"  # Change this to your new version
+**Windows:**
+```batch
+release.bat
 ```
+Double-click `release.bat` or run it from command prompt.
 
-### Step 2: Commit and Push Your Changes
-
+**Linux/macOS:**
 ```bash
-git add .
-git commit -m "Bump version to 1.1.0 and add new features"
-git push origin main
+chmod +x release.sh
+./release.sh
 ```
 
-### Step 3: Create a GitHub Release
+**Or directly:**
+```bash
+python create_release.py
+```
 
-1. Go to your repository on GitHub: https://github.com/redjoy12/Work-Logger
-2. Click on "Releases" in the right sidebar
-3. Click "Draft a new release"
-4. Create a new tag: `v1.1.0` (must start with 'v' and match the version in code)
-5. Set the release title: `Work Logger v1.1.0`
-6. Add release notes describing what's new
-7. Click "Publish release"
+The script will:
+1. Show your current version
+2. Ask for the new version number (e.g., `1.1.0`)
+3. Ask for release notes (type them and press Ctrl+D/Ctrl+Z when done)
+4. Show a summary and ask for confirmation
+5. Automatically:
+   - Update `VERSION` in `work_logger.py`
+   - Commit and push changes
+   - Create GitHub release with tag
+   - Trigger GitHub Actions to build executables
 
-### Step 4: Wait for Automated Build
+**That's it!** In 5-10 minutes, users can update via "Check for Updates"!
 
-Once you publish the release, GitHub Actions will automatically:
-- Build the Windows .exe file
-- Build the Linux binary
-- Build the macOS binary
-- Upload all three as release assets
+### Method 2: Config File (Even Simpler!)
 
-This takes about 5-10 minutes. You can watch the progress in the "Actions" tab.
+For those who prefer editing a file over typing into a terminal:
 
-### Step 5: Users Can Now Update
+1. **Create/Edit** `release_config.json`:
+   ```json
+   {
+     "version": "1.1.0",
+     "release_notes": "## Features\n- New dark mode\n- Export to CSV\n\n## Bug Fixes\n- Fixed crash on startup"
+   }
+   ```
 
-Once the build is complete, users can click "Check for Updates" in the app and they'll automatically download and install the new version!
+2. **Run the quick release script:**
+   ```bash
+   python quick_release.py
+   ```
+
+3. **Confirm** and it's done!
+
+The config file will be automatically archived after use so you start fresh next time.
+
+### Prerequisites
+
+Both methods require:
+- **GitHub CLI (`gh`)** to be installed and authenticated
+- **Clean git working directory** (no uncommitted changes)
+
+#### Installing GitHub CLI
+
+If you don't have `gh` installed:
+
+**Windows:**
+```bash
+winget install GitHub.cli
+```
+
+**macOS:**
+```bash
+brew install gh
+```
+
+**Linux:**
+See [GitHub CLI installation guide](https://github.com/cli/cli/blob/trunk/docs/install_linux.md)
+
+**Authenticate:**
+```bash
+gh auth login
+```
+
+### What Happens Automatically
+
+Once you run either script:
+
+1. ✓ Version updated in `work_logger.py`
+2. ✓ Changes committed with message "Bump version to X.X.X"
+3. ✓ Changes pushed to GitHub
+4. ✓ GitHub release created with tag `vX.X.X`
+5. ✓ GitHub Actions builds executables (Windows, Linux, macOS)
+6. ✓ Executables uploaded as release assets
+7. ✓ Users can now update via the app!
+
+The entire process takes about 5-10 minutes (mostly waiting for builds).
 
 ## Manual Build (For Testing)
 

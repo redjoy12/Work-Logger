@@ -238,32 +238,58 @@ Use Automator to create a Launch Agent or add to Login Items in System Preferenc
 
 ## For Developers: Creating Releases
 
-Work Logger uses GitHub Actions to automatically build executables for all platforms. When you create a new release:
+Creating a new release is **fully automated**! Just run one script:
 
-1. **Update the version** in `work_logger.py`:
-   ```python
-   VERSION = "1.1.0"  # Update this
-   ```
+### Quick Start
 
-2. **Commit and push** your changes:
-   ```bash
-   git add .
-   git commit -m "Release version 1.1.0"
-   git push origin main
-   ```
+**Windows** (double-click or run):
+```batch
+release.bat
+```
 
-3. **Create a GitHub Release**:
-   - Go to Releases → Draft a new release
-   - Create tag: `v1.1.0` (must start with 'v')
-   - Fill in release notes
-   - Publish release
+**Linux/macOS**:
+```bash
+./release.sh
+```
 
-4. **GitHub Actions automatically**:
-   - Builds Windows, Linux, and macOS executables
-   - Uploads them as release assets
-   - Users can now update via "Check for Updates" button
+**Direct**:
+```bash
+python create_release.py
+```
 
-See [RELEASE.md](RELEASE.md) for detailed instructions.
+The script will:
+1. Ask for the new version number
+2. Ask for release notes
+3. Automatically update code, commit, push, and create GitHub release
+4. GitHub Actions builds executables for Windows, Linux, and macOS
+5. Users can update via "Check for Updates" button!
+
+### Alternative: Config File Method
+
+Edit `release_config.json`:
+```json
+{
+  "version": "1.2.0",
+  "release_notes": "## Features\n- Cool new feature"
+}
+```
+
+Then run:
+```bash
+python quick_release.py
+```
+
+### What You Need
+
+- **GitHub CLI** (`gh`) installed and authenticated
+  - Windows: `winget install GitHub.cli`
+  - macOS: `brew install gh`
+  - Linux: See [installation guide](https://github.com/cli/cli/blob/trunk/docs/install_linux.md)
+- Run `gh auth login` to authenticate
+
+That's it! The entire release process takes about 5-10 minutes.
+
+See [RELEASE.md](RELEASE.md) for detailed instructions and troubleshooting.
 
 ## Contributing
 
