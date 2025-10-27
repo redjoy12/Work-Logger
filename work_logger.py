@@ -150,13 +150,21 @@ class WorkLogger:
         )
         self.start_btn.grid(row=0, column=0, padx=(0, 5))
 
+        self.finish_only_btn = ttk.Button(
+            button_frame,
+            text="Finish Current Task",
+            command=self.finish_current_task,
+            state=tk.DISABLED
+        )
+        self.finish_only_btn.grid(row=0, column=1, padx=(0, 5))
+
         self.finish_btn = ttk.Button(
             button_frame,
             text="Finish Current & Start New",
             command=self.finish_and_start_new,
             state=tk.DISABLED
         )
-        self.finish_btn.grid(row=0, column=1)
+        self.finish_btn.grid(row=0, column=2)
 
         # Task History Section
         history_frame = ttk.LabelFrame(main_frame, text="Task History", padding="10")
@@ -264,6 +272,15 @@ class WorkLogger:
         self.save_tasks()
         self.update_ui()
 
+    def finish_current_task(self):
+        """Finish current task without starting a new one."""
+        if self.current_task and not self.current_task.completed:
+            self.current_task.complete()
+            self.current_task = None
+            self.save_tasks()
+            self.update_ui()
+            messagebox.showinfo("Task Finished", "Current task has been marked as complete.")
+
     def finish_and_start_new(self):
         """Finish current task and start a new one."""
         if self.current_task and not self.current_task.completed:
@@ -282,8 +299,9 @@ class WorkLogger:
             )
             start_time = datetime.fromisoformat(self.current_task.start_time)
             self.current_task_time.config(
-                text=f"Started: {start_time.strftime('%Y-%m-%d %H:%M:%S')}"
+                text=f"Started: {start_time.strftime('%Y-%m-%d %H:%M')}"
             )
+            self.finish_only_btn.config(state=tk.NORMAL)
             self.finish_btn.config(state=tk.NORMAL)
         else:
             self.current_task_label.config(
@@ -291,6 +309,7 @@ class WorkLogger:
                 foreground="gray"
             )
             self.current_task_time.config(text="")
+            self.finish_only_btn.config(state=tk.DISABLED)
             self.finish_btn.config(state=tk.DISABLED)
 
         # Update task history
@@ -401,7 +420,7 @@ class WorkLogger:
                 if task.completed and end_var.get():
                     datetime.fromisoformat(end_var.get())
             except ValueError:
-                messagebox.showerror("Invalid Time", "Invalid timestamp format. Use ISO format: YYYY-MM-DD HH:MM:SS")
+                messagebox.showerror("Invalid Time", "Invalid timestamp format. Use ISO format: YYYY-MM-DD HH:MM")
                 return
 
             # Update task
@@ -534,23 +553,26 @@ class WorkLogger:
                 print(f"Error during migration: {e}")
 
     def load_tasks(self):
-        """Load tasks from all daily JSON files."""
+        """Load tasks from today's daily JSON file only."""
         self.tasks = []
 
-        # Load all log files from the logs directory
+        # Load only today's log file from the logs directory
         if os.path.exists(self.LOGS_DIR):
             try:
-                log_files = sorted([f for f in os.listdir(self.LOGS_DIR) if f.endswith('.json') and f != 'current_task.json'])
+                # Get today's date
+                today = datetime.now().date()
+                today_file = f"{today.strftime('%Y-%m-%d')}.json"
+                today_file_path = os.path.join(self.LOGS_DIR, today_file)
 
-                for log_file in log_files:
-                    file_path = os.path.join(self.LOGS_DIR, log_file)
+                # Load today's tasks if the file exists
+                if os.path.exists(today_file_path):
                     try:
-                        with open(file_path, 'r') as f:
+                        with open(today_file_path, 'r') as f:
                             data = json.load(f)
                             tasks = [Task.from_dict(task_data) for task_data in data.get('tasks', [])]
                             self.tasks.extend(tasks)
                     except Exception as e:
-                        print(f"Error loading {log_file}: {e}")
+                        print(f"Error loading {today_file}: {e}")
 
                 # Sort tasks by start time
                 self.tasks.sort(key=lambda t: t.start_time)
