@@ -1266,9 +1266,13 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
             dialog.destroy()
 
             if download_url:
+                # Download and install from GitHub release
                 self._download_and_install_update(download_url, updater)
+            elif not updater.is_frozen:
+                # Running as Python script - use git update
+                self._install_git_update(latest_version, updater)
             else:
-                # No direct download available - guide user to GitHub
+                # No direct download available and not in Python script mode - guide user to GitHub
                 response = messagebox.askyesno(
                     "Manual Update Required",
                     "Automatic update is not available for your platform.\n\n"
@@ -1364,6 +1368,56 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
 
         # Start background thread
         Thread(target=download_and_install_thread, daemon=True).start()
+
+    def _install_git_update(self, latest_version, updater):
+        """Install update using git pull for Python script mode."""
+        # Create progress window
+        progress_window = tk.Toplevel(self.root)
+        progress_window.title("Installing Update")
+        progress_window.geometry("400x150")
+        progress_window.transient(self.root)
+        progress_window.grab_set()
+
+        frame = ttk.Frame(progress_window, padding="20")
+        frame.pack(fill=tk.BOTH, expand=True)
+
+        status_label = ttk.Label(frame, text="Updating from git repository...", font=("Arial", 10))
+        status_label.pack(pady=(0, 20))
+
+        progress_bar = ttk.Progressbar(frame, mode='indeterminate', length=300)
+        progress_bar.pack()
+        progress_bar.start()
+
+        def git_update_thread():
+            """Background thread to perform git update."""
+            try:
+                # Perform git update
+                success = updater.install_update(None)
+
+                def show_success():
+                    progress_bar.stop()
+                    progress_window.destroy()
+                    if success:
+                        messagebox.showinfo(
+                            "Update Complete",
+                            f"Successfully updated to v{latest_version}.\n\n"
+                            "The application will now restart."
+                        )
+                        self.root.destroy()
+                        sys.exit(0)
+
+                progress_window.after(0, show_success)
+
+            except Exception as e:
+                def show_error():
+                    progress_bar.stop()
+                    progress_window.destroy()
+                    messagebox.showerror("Update Failed", f"Failed to install update: {str(e)}")
+
+                progress_window.after(0, show_error)
+
+        # Start background thread
+        Thread(target=git_update_thread, daemon=True).start()
 
     def toggle_fullscreen(self):
         """Toggle fullscreen mode."""
