@@ -83,7 +83,26 @@ class WorkLogger:
     def __init__(self, root):
         self.root = root
         self.root.title(f"Work Logger v{VERSION}")
-        self.root.geometry("700x600")
+        self.root.geometry("800x700")
+
+        # Modern color scheme
+        self.colors = {
+            'bg': '#f5f7fa',
+            'primary': '#667eea',
+            'primary_dark': '#5568d3',
+            'secondary': '#48bb78',
+            'danger': '#f56565',
+            'warning': '#ed8936',
+            'text_dark': '#2d3748',
+            'text_light': '#718096',
+            'white': '#ffffff',
+            'border': '#e2e8f0',
+            'success': '#38a169',
+            'info': '#4299e1'
+        }
+
+        # Configure root window background
+        self.root.configure(bg=self.colors['bg'])
 
         self.tasks = []
         self.current_task = None
@@ -107,138 +126,367 @@ class WorkLogger:
 
     def setup_ui(self):
         """Create the user interface."""
-        # Main container
-        main_frame = ttk.Frame(self.root, padding="10")
+        # Configure custom styles
+        style = ttk.Style()
+        style.theme_use('clam')
+
+        # Configure custom button styles
+        style.configure('Primary.TButton',
+                       background=self.colors['primary'],
+                       foreground='white',
+                       borderwidth=0,
+                       focuscolor='none',
+                       padding=(20, 10),
+                       font=('Segoe UI', 10, 'bold'))
+        style.map('Primary.TButton',
+                 background=[('active', self.colors['primary_dark'])])
+
+        style.configure('Secondary.TButton',
+                       background=self.colors['secondary'],
+                       foreground='white',
+                       borderwidth=0,
+                       focuscolor='none',
+                       padding=(15, 8),
+                       font=('Segoe UI', 9, 'bold'))
+        style.map('Secondary.TButton',
+                 background=[('active', self.colors['success'])])
+
+        style.configure('Danger.TButton',
+                       background=self.colors['danger'],
+                       foreground='white',
+                       borderwidth=0,
+                       focuscolor='none',
+                       padding=(15, 8),
+                       font=('Segoe UI', 9, 'bold'))
+
+        style.configure('Custom.TEntry',
+                       fieldbackground='white',
+                       borderwidth=2,
+                       relief='solid',
+                       padding=10)
+
+        # Main container with padding
+        main_frame = tk.Frame(self.root, bg=self.colors['bg'], padx=20, pady=20)
         main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
 
-        # Current Task Section
-        current_frame = ttk.LabelFrame(main_frame, text="Current Task", padding="10")
-        current_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
-        current_frame.columnconfigure(0, weight=1)
+        # Header
+        header_frame = tk.Frame(main_frame, bg=self.colors['bg'])
+        header_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 20))
 
-        self.current_task_label = ttk.Label(
-            current_frame,
-            text="No active task",
-            font=("Arial", 12, "bold"),
-            foreground="gray"
+        title_label = tk.Label(
+            header_frame,
+            text=f"Work Logger v{VERSION}",
+            font=('Segoe UI', 24, 'bold'),
+            bg=self.colors['bg'],
+            fg=self.colors['primary']
         )
-        self.current_task_label.grid(row=0, column=0, sticky=tk.W, pady=(0, 5))
+        title_label.pack(side=tk.LEFT)
 
-        self.current_task_time = ttk.Label(current_frame, text="", foreground="blue")
-        self.current_task_time.grid(row=1, column=0, sticky=tk.W)
+        subtitle_label = tk.Label(
+            header_frame,
+            text="Track your hourly work tasks",
+            font=('Segoe UI', 11),
+            bg=self.colors['bg'],
+            fg=self.colors['text_light']
+        )
+        subtitle_label.pack(side=tk.LEFT, padx=(15, 0))
 
-        # New Task Section
-        new_task_frame = ttk.LabelFrame(main_frame, text="New Task", padding="10")
-        new_task_frame.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
-        new_task_frame.columnconfigure(0, weight=1)
+        # Current Task Section (Card style)
+        current_card = tk.Frame(main_frame, bg=self.colors['white'], relief=tk.FLAT, bd=0)
+        current_card.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
+        current_card.columnconfigure(0, weight=1)
 
-        ttk.Label(new_task_frame, text="What are you working on?").grid(row=0, column=0, sticky=tk.W)
+        # Card shadow effect simulation
+        shadow_frame = tk.Frame(main_frame, bg='#d0d5dd', relief=tk.FLAT)
+        shadow_frame.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(2, 15))
+        shadow_frame.lower(current_card)
 
-        self.task_entry = ttk.Entry(new_task_frame, width=50)
-        self.task_entry.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(5, 10))
+        current_inner = tk.Frame(current_card, bg=self.colors['white'], padx=25, pady=20)
+        current_inner.pack(fill=tk.BOTH, expand=True)
+
+        tk.Label(
+            current_inner,
+            text="CURRENT TASK",
+            font=('Segoe UI', 10, 'bold'),
+            bg=self.colors['white'],
+            fg=self.colors['text_light']
+        ).pack(anchor=tk.W)
+
+        self.current_task_label = tk.Label(
+            current_inner,
+            text="No active task",
+            font=('Segoe UI', 16, 'bold'),
+            bg=self.colors['white'],
+            fg=self.colors['text_light'],
+            wraplength=700,
+            justify=tk.LEFT
+        )
+        self.current_task_label.pack(anchor=tk.W, pady=(10, 5))
+
+        self.current_task_time = tk.Label(
+            current_inner,
+            text="",
+            font=('Segoe UI', 11),
+            bg=self.colors['white'],
+            fg=self.colors['info']
+        )
+        self.current_task_time.pack(anchor=tk.W)
+
+        # New Task Section (Card style)
+        new_task_card = tk.Frame(main_frame, bg=self.colors['white'], relief=tk.FLAT, bd=0)
+        new_task_card.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
+        new_task_card.columnconfigure(0, weight=1)
+
+        new_task_inner = tk.Frame(new_task_card, bg=self.colors['white'], padx=25, pady=20)
+        new_task_inner.pack(fill=tk.BOTH, expand=True)
+        new_task_inner.columnconfigure(0, weight=1)
+
+        tk.Label(
+            new_task_inner,
+            text="START NEW TASK",
+            font=('Segoe UI', 10, 'bold'),
+            bg=self.colors['white'],
+            fg=self.colors['text_light']
+        ).grid(row=0, column=0, sticky=tk.W, pady=(0, 10))
+
+        tk.Label(
+            new_task_inner,
+            text="What are you working on?",
+            font=('Segoe UI', 11),
+            bg=self.colors['white'],
+            fg=self.colors['text_dark']
+        ).grid(row=1, column=0, sticky=tk.W, pady=(0, 8))
+
+        # Custom styled entry
+        entry_frame = tk.Frame(new_task_inner, bg='white', highlightbackground=self.colors['border'],
+                              highlightthickness=2, highlightcolor=self.colors['primary'])
+        entry_frame.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
+
+        self.task_entry = tk.Entry(
+            entry_frame,
+            font=('Segoe UI', 12),
+            bg='white',
+            fg=self.colors['text_dark'],
+            relief=tk.FLAT,
+            bd=0
+        )
+        self.task_entry.pack(fill=tk.BOTH, padx=12, pady=10)
         self.task_entry.bind('<Return>', lambda e: self.start_new_task())
 
-        button_frame = ttk.Frame(new_task_frame)
-        button_frame.grid(row=2, column=0, sticky=tk.W)
+        button_frame = tk.Frame(new_task_inner, bg=self.colors['white'])
+        button_frame.grid(row=3, column=0, sticky=tk.W)
 
-        self.start_btn = ttk.Button(
+        self.start_btn = tk.Button(
             button_frame,
-            text="Start New Task",
-            command=self.start_new_task
+            text="START TASK",
+            command=self.start_new_task,
+            bg=self.colors['primary'],
+            fg='white',
+            font=('Segoe UI', 10, 'bold'),
+            relief=tk.FLAT,
+            cursor='hand2',
+            padx=20,
+            pady=10,
+            bd=0
         )
-        self.start_btn.grid(row=0, column=0, padx=(0, 5))
+        self.start_btn.grid(row=0, column=0, padx=(0, 10))
+        self.start_btn.bind('<Enter>', lambda e: self.start_btn.config(bg=self.colors['primary_dark']))
+        self.start_btn.bind('<Leave>', lambda e: self.start_btn.config(bg=self.colors['primary']))
 
-        self.finish_only_btn = ttk.Button(
+        self.finish_only_btn = tk.Button(
             button_frame,
-            text="Finish Current Task",
+            text="FINISH CURRENT",
             command=self.finish_current_task,
+            bg=self.colors['secondary'],
+            fg='white',
+            font=('Segoe UI', 10, 'bold'),
+            relief=tk.FLAT,
+            cursor='hand2',
+            padx=20,
+            pady=10,
+            bd=0,
             state=tk.DISABLED
         )
-        self.finish_only_btn.grid(row=0, column=1, padx=(0, 5))
+        self.finish_only_btn.grid(row=0, column=1, padx=(0, 10))
 
-        self.finish_btn = ttk.Button(
+        self.finish_btn = tk.Button(
             button_frame,
-            text="Finish Current & Start New",
+            text="FINISH & START NEW",
             command=self.finish_and_start_new,
+            bg=self.colors['warning'],
+            fg='white',
+            font=('Segoe UI', 10, 'bold'),
+            relief=tk.FLAT,
+            cursor='hand2',
+            padx=20,
+            pady=10,
+            bd=0,
             state=tk.DISABLED
         )
         self.finish_btn.grid(row=0, column=2)
 
-        # Task History Section
-        history_frame = ttk.LabelFrame(main_frame, text="Task History", padding="10")
-        history_frame.grid(row=2, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        history_frame.columnconfigure(0, weight=1)
-        history_frame.rowconfigure(0, weight=1)
-        main_frame.rowconfigure(2, weight=1)
+        # Task History Section (Card style)
+        history_card = tk.Frame(main_frame, bg=self.colors['white'], relief=tk.FLAT, bd=0)
+        history_card.grid(row=3, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        history_card.columnconfigure(0, weight=1)
+        history_card.rowconfigure(1, weight=1)
+        main_frame.rowconfigure(3, weight=1)
 
-        # Scrolled text for task history
+        history_inner = tk.Frame(history_card, bg=self.colors['white'], padx=25, pady=20)
+        history_inner.pack(fill=tk.BOTH, expand=True)
+        history_inner.columnconfigure(0, weight=1)
+        history_inner.rowconfigure(1, weight=1)
+
+        tk.Label(
+            history_inner,
+            text="TASK HISTORY",
+            font=('Segoe UI', 10, 'bold'),
+            bg=self.colors['white'],
+            fg=self.colors['text_light']
+        ).grid(row=0, column=0, sticky=tk.W, pady=(0, 10))
+
+        # Scrolled text for task history with better styling
+        text_frame = tk.Frame(history_inner, bg=self.colors['white'])
+        text_frame.grid(row=1, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 15))
+        text_frame.columnconfigure(0, weight=1)
+        text_frame.rowconfigure(0, weight=1)
+
         self.history_text = scrolledtext.ScrolledText(
-            history_frame,
-            width=60,
-            height=15,
+            text_frame,
             wrap=tk.WORD,
-            state=tk.DISABLED
+            font=('Segoe UI', 10),
+            bg='#fafbfc',
+            fg=self.colors['text_dark'],
+            relief=tk.FLAT,
+            padx=15,
+            pady=15,
+            bd=0,
+            state=tk.DISABLED,
+            highlightthickness=1,
+            highlightbackground=self.colors['border'],
+            highlightcolor=self.colors['primary']
         )
-        self.history_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
+        self.history_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
 
         # Buttons for task management
-        history_btn_frame = ttk.Frame(history_frame)
-        history_btn_frame.grid(row=1, column=0, sticky=tk.W)
+        history_btn_frame = tk.Frame(history_inner, bg=self.colors['white'])
+        history_btn_frame.grid(row=2, column=0, sticky=tk.W)
 
-        ttk.Button(
+        edit_btn = tk.Button(
             history_btn_frame,
-            text="Edit Selected Task",
-            command=self.edit_task
-        ).grid(row=0, column=0, padx=(0, 5))
+            text="EDIT SELECTED",
+            command=self.edit_task,
+            bg=self.colors['info'],
+            fg='white',
+            font=('Segoe UI', 9, 'bold'),
+            relief=tk.FLAT,
+            cursor='hand2',
+            padx=15,
+            pady=8,
+            bd=0
+        )
+        edit_btn.grid(row=0, column=0, padx=(0, 10))
 
-        ttk.Button(
+        delete_btn = tk.Button(
             history_btn_frame,
-            text="Delete Selected Task",
-            command=self.delete_task
-        ).grid(row=0, column=1, padx=(0, 5))
+            text="DELETE SELECTED",
+            command=self.delete_task,
+            bg=self.colors['danger'],
+            fg='white',
+            font=('Segoe UI', 9, 'bold'),
+            relief=tk.FLAT,
+            cursor='hand2',
+            padx=15,
+            pady=8,
+            bd=0
+        )
+        delete_btn.grid(row=0, column=1)
 
         # Enable text selection
         self.history_text.bind("<Button-1>", self.on_history_click)
         self.selected_task_index = None
 
-        # Settings Section
-        settings_frame = ttk.Frame(main_frame)
-        settings_frame.grid(row=3, column=0, sticky=(tk.W, tk.E), pady=(10, 0))
+        # Settings Section (Card style)
+        settings_card = tk.Frame(main_frame, bg=self.colors['white'], relief=tk.FLAT, bd=0)
+        settings_card.grid(row=4, column=0, sticky=(tk.W, tk.E), pady=(15, 0))
 
-        ttk.Label(settings_frame, text="Reminder Interval (minutes):").grid(row=0, column=0, sticky=tk.W)
+        settings_inner = tk.Frame(settings_card, bg=self.colors['white'], padx=25, pady=15)
+        settings_inner.pack(fill=tk.BOTH, expand=True)
+
+        tk.Label(
+            settings_inner,
+            text="Reminder Interval (minutes):",
+            font=('Segoe UI', 10),
+            bg=self.colors['white'],
+            fg=self.colors['text_dark']
+        ).grid(row=0, column=0, sticky=tk.W, padx=(0, 10))
 
         self.interval_var = tk.StringVar(value="60")
-        interval_spinbox = ttk.Spinbox(
-            settings_frame,
+        interval_frame = tk.Frame(settings_inner, bg='white', highlightbackground=self.colors['border'],
+                                 highlightthickness=1)
+        interval_frame.grid(row=0, column=1, padx=(0, 10))
+
+        interval_spinbox = tk.Spinbox(
+            interval_frame,
             from_=1,
             to=240,
             textvariable=self.interval_var,
-            width=10,
-            command=self.update_reminder_interval
+            font=('Segoe UI', 10),
+            width=8,
+            relief=tk.FLAT,
+            bd=0,
+            bg='white'
         )
-        interval_spinbox.grid(row=0, column=1, padx=(5, 10))
+        interval_spinbox.pack(padx=5, pady=3)
 
-        ttk.Button(
-            settings_frame,
-            text="Update Interval",
-            command=self.update_reminder_interval
-        ).grid(row=0, column=2)
+        update_btn = tk.Button(
+            settings_inner,
+            text="UPDATE",
+            command=self.update_reminder_interval,
+            bg=self.colors['primary'],
+            fg='white',
+            font=('Segoe UI', 9, 'bold'),
+            relief=tk.FLAT,
+            cursor='hand2',
+            padx=15,
+            pady=8,
+            bd=0
+        )
+        update_btn.grid(row=0, column=2, padx=(0, 10))
 
-        ttk.Button(
-            settings_frame,
-            text="Test Reminder Now",
-            command=self.show_reminder
-        ).grid(row=0, column=3, padx=(10, 0))
+        test_btn = tk.Button(
+            settings_inner,
+            text="TEST REMINDER",
+            command=self.show_reminder,
+            bg=self.colors['info'],
+            fg='white',
+            font=('Segoe UI', 9, 'bold'),
+            relief=tk.FLAT,
+            cursor='hand2',
+            padx=15,
+            pady=8,
+            bd=0
+        )
+        test_btn.grid(row=0, column=3, padx=(0, 10))
 
         # Add Update button if updater is available
         if UPDATER_AVAILABLE:
-            ttk.Button(
-                settings_frame,
-                text="Check for Updates",
-                command=self.check_for_updates
-            ).grid(row=0, column=4, padx=(10, 0))
+            updates_btn = tk.Button(
+                settings_inner,
+                text="CHECK UPDATES",
+                command=self.check_for_updates,
+                bg=self.colors['warning'],
+                fg='white',
+                font=('Segoe UI', 9, 'bold'),
+                relief=tk.FLAT,
+                cursor='hand2',
+                padx=15,
+                pady=8,
+                bd=0
+            )
+            updates_btn.grid(row=0, column=4)
 
         # Update UI
         self.update_ui()
@@ -295,32 +543,39 @@ class WorkLogger:
         if self.current_task and not self.current_task.completed:
             self.current_task_label.config(
                 text=self.current_task.description,
-                foreground="green"
+                fg=self.colors['secondary']
             )
             start_time = datetime.fromisoformat(self.current_task.start_time)
             self.current_task_time.config(
                 text=f"Started: {start_time.strftime('%Y-%m-%d %H:%M')}"
             )
-            self.finish_only_btn.config(state=tk.NORMAL)
-            self.finish_btn.config(state=tk.NORMAL)
+            self.finish_only_btn.config(state=tk.NORMAL, bg=self.colors['secondary'])
+            self.finish_btn.config(state=tk.NORMAL, bg=self.colors['warning'])
         else:
             self.current_task_label.config(
                 text="No active task",
-                foreground="gray"
+                fg=self.colors['text_light']
             )
             self.current_task_time.config(text="")
-            self.finish_only_btn.config(state=tk.DISABLED)
-            self.finish_btn.config(state=tk.DISABLED)
+            self.finish_only_btn.config(state=tk.DISABLED, bg='#cbd5e0')
+            self.finish_btn.config(state=tk.DISABLED, bg='#cbd5e0')
 
         # Update task history
         self.history_text.config(state=tk.NORMAL)
         self.history_text.delete(1.0, tk.END)
 
+        # Configure text tags for styling
+        self.history_text.tag_configure("task_name", font=('Segoe UI', 11, 'bold'), foreground=self.colors['text_dark'])
+        self.history_text.tag_configure("completed_status", foreground=self.colors['success'], font=('Segoe UI', 10, 'bold'))
+        self.history_text.tag_configure("progress_status", foreground=self.colors['warning'], font=('Segoe UI', 10, 'bold'))
+        self.history_text.tag_configure("time_info", foreground=self.colors['text_light'], font=('Segoe UI', 9))
+        self.history_text.tag_configure("duration_info", foreground=self.colors['info'], font=('Segoe UI', 9, 'bold'))
+
         # Store task line mapping for selection
         self.task_line_map = {}
 
         if not self.tasks:
-            self.history_text.insert(tk.END, "No tasks logged yet.")
+            self.history_text.insert(tk.END, "No tasks logged yet.", "time_info")
         else:
             for i, task in enumerate(reversed(self.tasks), 1):
                 # Store the line number for this task
@@ -329,26 +584,34 @@ class WorkLogger:
                 self.task_line_map[int(line_start.split('.')[0])] = actual_index
 
                 start = datetime.fromisoformat(task.start_time)
-                status = "✓ Completed" if task.completed else "⏱ In Progress"
 
+                # Task description with number
                 self.history_text.insert(tk.END, f"{i}. {task.description}\n", "task_name")
+
+                # Time information
                 self.history_text.insert(
                     tk.END,
-                    f"   Started: {start.strftime('%Y-%m-%d %H:%M')}\n"
+                    f"   Started: {start.strftime('%Y-%m-%d %H:%M')}\n",
+                    "time_info"
                 )
 
                 if task.completed:
                     end = datetime.fromisoformat(task.end_time)
                     self.history_text.insert(
                         tk.END,
-                        f"   Ended: {end.strftime('%Y-%m-%d %H:%M')}\n"
+                        f"   Ended: {end.strftime('%Y-%m-%d %H:%M')}\n",
+                        "time_info"
                     )
                     self.history_text.insert(
                         tk.END,
-                        f"   Duration: {task.duration_str()}\n"
+                        f"   Duration: {task.duration_str()}\n",
+                        "duration_info"
                     )
-
-                self.history_text.insert(tk.END, f"   Status: {status}\n\n")
+                    self.history_text.insert(tk.END, "   Status: ", "time_info")
+                    self.history_text.insert(tk.END, "✓ Completed\n\n", "completed_status")
+                else:
+                    self.history_text.insert(tk.END, "   Status: ", "time_info")
+                    self.history_text.insert(tk.END, "⏱ In Progress\n\n", "progress_status")
 
         self.history_text.config(state=tk.DISABLED)
 
@@ -371,7 +634,7 @@ class WorkLogger:
         """Highlight the selected task in the history."""
         self.history_text.tag_remove("highlight", "1.0", tk.END)
         self.history_text.tag_add("highlight", f"{start_line}.0", f"{start_line + 6}.0")
-        self.history_text.tag_config("highlight", background="lightblue")
+        self.history_text.tag_config("highlight", background='#e6f2ff', borderwidth=0)
 
     def edit_task(self):
         """Edit the selected task."""
