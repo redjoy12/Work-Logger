@@ -14,7 +14,7 @@ from threading import Thread, Event
 import time
 
 # Version information
-VERSION = "1.0.2"
+VERSION = "1.0.3"
 
 # Import updater module
 try:
