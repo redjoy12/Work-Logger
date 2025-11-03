@@ -570,18 +570,20 @@ class WorkLogger:
         self.history_text.tag_configure("progress_status", foreground=self.colors['warning'], font=('Segoe UI', 10, 'bold'))
         self.history_text.tag_configure("time_info", foreground=self.colors['text_light'], font=('Segoe UI', 9))
         self.history_text.tag_configure("duration_info", foreground=self.colors['info'], font=('Segoe UI', 9, 'bold'))
+        self.history_text.tag_configure("separator", foreground=self.colors['border'], font=('Segoe UI', 8))
+        self.history_text.tag_configure("entry_bg", background='#ffffff', borderwidth=1, relief=tk.SOLID)
 
-        # Store task line mapping for selection
+        # Store task line mapping for selection (including line count for each task)
         self.task_line_map = {}
 
         if not self.tasks:
             self.history_text.insert(tk.END, "No tasks logged yet.", "time_info")
         else:
             for i, task in enumerate(reversed(self.tasks), 1):
-                # Store the line number for this task
-                line_start = self.history_text.index(tk.INSERT)
+                # Store the starting line number for this task
+                line_start_index = self.history_text.index(tk.INSERT)
+                line_start = int(line_start_index.split('.')[0])
                 actual_index = len(self.tasks) - i  # Index in self.tasks list
-                self.task_line_map[int(line_start.split('.')[0])] = actual_index
 
                 start = datetime.fromisoformat(task.start_time)
 
@@ -594,6 +596,9 @@ class WorkLogger:
                     f"   Started: {start.strftime('%Y-%m-%d %H:%M')}\n",
                     "time_info"
                 )
+
+                # Calculate the number of lines this task will occupy
+                lines_count = 2  # Task name + Started time
 
                 if task.completed:
                     end = datetime.fromisoformat(task.end_time)
@@ -608,10 +613,26 @@ class WorkLogger:
                         "duration_info"
                     )
                     self.history_text.insert(tk.END, "   Status: ", "time_info")
-                    self.history_text.insert(tk.END, "✓ Completed\n\n", "completed_status")
+                    self.history_text.insert(tk.END, "✓ Completed\n", "completed_status")
+                    lines_count += 3  # Ended, Duration, Status
                 else:
                     self.history_text.insert(tk.END, "   Status: ", "time_info")
-                    self.history_text.insert(tk.END, "⏱ In Progress\n\n", "progress_status")
+                    self.history_text.insert(tk.END, "⏱ In Progress\n", "progress_status")
+                    lines_count += 1  # Status
+
+                # Add separator line for visual clarity
+                if i < len(self.tasks):  # Don't add separator after the last task
+                    self.history_text.insert(tk.END, "\n" + "─" * 60 + "\n\n", "separator")
+                    lines_count += 3  # Blank line + separator + blank line
+                else:
+                    self.history_text.insert(tk.END, "\n", "separator")
+                    lines_count += 1
+
+                # Store the task index and line count for selection
+                self.task_line_map[line_start] = {
+                    'task_index': actual_index,
+                    'line_count': lines_count
+                }
 
         self.history_text.config(state=tk.DISABLED)
 
@@ -622,19 +643,30 @@ class WorkLogger:
         line_num = int(index.split('.')[0])
 
         # Find which task this line belongs to
-        for task_line, task_index in self.task_line_map.items():
-            # Check if click is within task's lines (each task takes about 5-6 lines)
-            if task_line <= line_num < task_line + 6:
-                self.selected_task_index = task_index
-                # Highlight the selection
-                self.highlight_selected_task(task_line)
+        for task_line, task_data in self.task_line_map.items():
+            # Check if click is within task's lines using actual line count
+            if task_line <= line_num < task_line + task_data['line_count']:
+                self.selected_task_index = task_data['task_index']
+                # Highlight the selection with exact dimensions
+                self.highlight_selected_task(task_line, task_data['line_count'])
                 return
 
-    def highlight_selected_task(self, start_line):
-        """Highlight the selected task in the history."""
+    def highlight_selected_task(self, start_line, line_count):
+        """Highlight the selected task in the history with exact dimensions."""
         self.history_text.tag_remove("highlight", "1.0", tk.END)
-        self.history_text.tag_add("highlight", f"{start_line}.0", f"{start_line + 6}.0")
-        self.history_text.tag_config("highlight", background='#e6f2ff', borderwidth=0)
+        # Highlight only the task content, excluding the separator
+        # Subtract separator lines if present (3 lines: blank + separator + blank)
+        highlight_lines = line_count - 3 if line_count > 4 else line_count - 1
+        self.history_text.tag_add("highlight", f"{start_line}.0", f"{start_line + highlight_lines}.0")
+        self.history_text.tag_config("highlight",
+                                    background='#e3f2fd',
+                                    borderwidth=2,
+                                    relief=tk.SOLID,
+                                    spacing1=5,
+                                    spacing3=5,
+                                    lmargin1=10,
+                                    lmargin2=10,
+                                    rmargin=10)
 
     def edit_task(self):
         """Edit the selected task."""
