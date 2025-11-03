@@ -190,6 +190,9 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
 
+        # Configure main_frame to expand properly
+        main_frame.columnconfigure(0, weight=1)
+
         # Header
         header_frame = tk.Frame(main_frame, bg=self.colors['bg'])
         header_frame.grid(row=0, column=0, sticky=(tk.W, tk.E), pady=(0, 20))
