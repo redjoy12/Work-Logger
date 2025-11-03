@@ -83,7 +83,21 @@ class WorkLogger:
     def __init__(self, root):
         self.root = root
         self.root.title(f"Work Logger v{VERSION}")
-        self.root.geometry("800x700")
+
+        # Set initial window size and center it
+        window_width = 800
+        window_height = 700
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        x = (screen_width - window_width) // 2
+        y = (screen_height - window_height) // 2
+        self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")
+
+        # Set minimum window size
+        self.root.minsize(600, 500)
+
+        # Fullscreen state
+        self.is_fullscreen = False
 
         # Modern color scheme
         self.colors = {
@@ -120,6 +134,10 @@ class WorkLogger:
         self.load_tasks()
         self.setup_ui()
         self.start_reminder_timer()
+
+        # Bind F11 for fullscreen toggle
+        self.root.bind('<F11>', lambda e: self.toggle_fullscreen())
+        self.root.bind('<Escape>', lambda e: self.exit_fullscreen())
 
         # Handle window close
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
@@ -912,7 +930,19 @@ class WorkLogger:
         """Show reminder popup to log work."""
         reminder_window = tk.Toplevel(self.root)
         reminder_window.title("Work Logger Reminder")
-        reminder_window.geometry("400x250")
+
+        # Set window size and center it
+        window_width = 500
+        window_height = 320
+        screen_width = reminder_window.winfo_screenwidth()
+        screen_height = reminder_window.winfo_screenheight()
+        x = (screen_width - window_width) // 2
+        y = (screen_height - window_height) // 2
+        reminder_window.geometry(f"{window_width}x{window_height}+{x}+{y}")
+
+        # Configure window appearance
+        reminder_window.configure(bg=self.colors['bg'])
+        reminder_window.resizable(False, False)
 
         # Make window appear on top
         reminder_window.attributes('-topmost', True)
@@ -922,26 +952,59 @@ class WorkLogger:
         # Flash the window to get attention
         self._flash_window(reminder_window)
 
-        frame = ttk.Frame(reminder_window, padding="20")
+        # Main frame with padding
+        frame = tk.Frame(reminder_window, bg=self.colors['bg'], padx=30, pady=30)
         frame.pack(fill=tk.BOTH, expand=True)
 
-        # Message
-        ttk.Label(
-            frame,
+        # Card-style container
+        card = tk.Frame(frame, bg=self.colors['white'], relief='flat', bd=0)
+        card.pack(fill=tk.BOTH, expand=True)
+
+        # Add shadow effect
+        card.configure(highlightbackground=self.colors['border'], highlightthickness=1)
+
+        # Content frame inside card
+        content = tk.Frame(card, bg=self.colors['white'], padx=25, pady=25)
+        content.pack(fill=tk.BOTH, expand=True)
+
+        # Header with icon
+        header_label = tk.Label(
+            content,
             text="⏰ Time to log your work!",
-            font=("Arial", 14, "bold")
-        ).pack(pady=(0, 10))
+            font=("Segoe UI", 16, "bold"),
+            fg=self.colors['primary'],
+            bg=self.colors['white']
+        )
+        header_label.pack(pady=(0, 10))
 
-        ttk.Label(
-            frame,
+        # Subtitle
+        subtitle_label = tk.Label(
+            content,
             text="What have you been working on?",
-            font=("Arial", 10)
-        ).pack(pady=(0, 10))
+            font=("Segoe UI", 10),
+            fg=self.colors['text_light'],
+            bg=self.colors['white']
+        )
+        subtitle_label.pack(pady=(0, 15))
 
-        # Entry for quick task log
+        # Entry for quick task log with modern styling
         task_var = tk.StringVar()
-        entry = ttk.Entry(frame, textvariable=task_var, width=40)
-        entry.pack(pady=(0, 20))
+        entry_frame = tk.Frame(content, bg=self.colors['white'])
+        entry_frame.pack(pady=(0, 20), fill=tk.X)
+
+        entry = tk.Entry(
+            entry_frame,
+            textvariable=task_var,
+            font=("Segoe UI", 10),
+            bg=self.colors['white'],
+            fg=self.colors['text_dark'],
+            relief='solid',
+            bd=2,
+            highlightthickness=0,
+            insertbackground=self.colors['primary']
+        )
+        entry.pack(fill=tk.X, ipady=8, ipadx=10)
+        entry.configure(highlightbackground=self.colors['border'], highlightcolor=self.colors['primary'])
         entry.focus()
 
         def log_task():
@@ -967,13 +1030,63 @@ class WorkLogger:
             self.root.focus_force()
             reminder_window.destroy()
 
-        # Buttons
-        btn_frame = ttk.Frame(frame)
+        # Buttons with modern styling
+        btn_frame = tk.Frame(content, bg=self.colors['white'])
         btn_frame.pack()
 
-        ttk.Button(btn_frame, text="Log Task", command=log_task).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Open Main Window", command=open_main).pack(side=tk.LEFT, padx=5)
-        ttk.Button(btn_frame, text="Remind Me Later", command=reminder_window.destroy).pack(side=tk.LEFT, padx=5)
+        # Log Task button (primary)
+        log_btn = tk.Button(
+            btn_frame,
+            text="Log Task",
+            command=log_task,
+            bg=self.colors['primary'],
+            fg='white',
+            font=("Segoe UI", 9, "bold"),
+            relief='flat',
+            cursor='hand2',
+            padx=20,
+            pady=8,
+            bd=0
+        )
+        log_btn.pack(side=tk.LEFT, padx=5)
+        log_btn.bind('<Enter>', lambda e: log_btn.config(bg=self.colors['primary_dark']))
+        log_btn.bind('<Leave>', lambda e: log_btn.config(bg=self.colors['primary']))
+
+        # Open Main Window button (secondary)
+        open_btn = tk.Button(
+            btn_frame,
+            text="Open Main Window",
+            command=open_main,
+            bg=self.colors['secondary'],
+            fg='white',
+            font=("Segoe UI", 9, "bold"),
+            relief='flat',
+            cursor='hand2',
+            padx=20,
+            pady=8,
+            bd=0
+        )
+        open_btn.pack(side=tk.LEFT, padx=5)
+        open_btn.bind('<Enter>', lambda e: open_btn.config(bg=self.colors['success']))
+        open_btn.bind('<Leave>', lambda e: open_btn.config(bg=self.colors['secondary']))
+
+        # Remind Me Later button (info)
+        later_btn = tk.Button(
+            btn_frame,
+            text="Remind Me Later",
+            command=reminder_window.destroy,
+            bg=self.colors['info'],
+            fg='white',
+            font=("Segoe UI", 9, "bold"),
+            relief='flat',
+            cursor='hand2',
+            padx=20,
+            pady=8,
+            bd=0
+        )
+        later_btn.pack(side=tk.LEFT, padx=5)
+        later_btn.bind('<Enter>', lambda e: later_btn.config(bg='#3182ce'))
+        later_btn.bind('<Leave>', lambda e: later_btn.config(bg=self.colors['info']))
 
         entry.bind('<Return>', lambda e: log_task())
 
@@ -1195,6 +1308,17 @@ class WorkLogger:
 
         # Start background thread
         Thread(target=download_and_install_thread, daemon=True).start()
+
+    def toggle_fullscreen(self):
+        """Toggle fullscreen mode."""
+        self.is_fullscreen = not self.is_fullscreen
+        self.root.attributes('-fullscreen', self.is_fullscreen)
+
+    def exit_fullscreen(self):
+        """Exit fullscreen mode."""
+        if self.is_fullscreen:
+            self.is_fullscreen = False
+            self.root.attributes('-fullscreen', False)
 
     def on_closing(self):
         """Handle application closing."""
