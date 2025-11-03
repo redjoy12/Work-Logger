@@ -10,9 +10,11 @@ from tkinter import ttk, messagebox, scrolledtext  # pylint: disable=import-erro
 import json
 import os
 import sys
+import platform
 from datetime import datetime
 from threading import Thread, Event
 import time
+import subprocess
 
 # Version information
 VERSION = "1.0.5"
@@ -1271,14 +1273,16 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
             if download_url:
                 # Download and install from GitHub release
                 self._download_and_install_update(download_url, updater)
-            elif not updater.is_frozen:
-                # Running as Python script - use git update
+            elif self._can_use_git_update():
+                # Try git update if in a git repository
                 self._install_git_update(latest_version, updater)
             else:
-                # No direct download available and not in Python script mode - guide user to GitHub
+                # No automatic update available - guide user to GitHub
                 response = messagebox.askyesno(
                     "Manual Update Required",
-                    "Automatic update is not available for your platform.\n\n"
+                    f"Automatic update is not available.\n\n"
+                    f"A platform-specific binary for {platform.system()} is not available "
+                    f"in this release.\n\n"
                     f"Would you like to open the GitHub releases page to download "
                     f"v{latest_version} manually?"
                 )
@@ -1422,6 +1426,20 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
 
         # Start background thread
         Thread(target=git_update_thread, daemon=True).start()
+
+    def _can_use_git_update(self):
+        """Check if git update is available (i.e., in a git repository)."""
+        try:
+            result = subprocess.run(
+                ['git', 'rev-parse', '--git-dir'],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=5
+            )
+            return result.returncode == 0
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            return False
 
     def toggle_fullscreen(self):
         """Toggle fullscreen mode."""
