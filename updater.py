@@ -11,7 +11,6 @@ import platform
 from urllib import request
 from urllib.error import URLError
 import tempfile
-import shutil
 
 
 class Updater:
@@ -55,7 +54,7 @@ class Updater:
             return True, latest_version, download_url, release_notes
 
         except (URLError, json.JSONDecodeError, KeyError) as e:
-            raise Exception(f"Failed to check for updates: {str(e)}")
+            raise Exception(f"Failed to check for updates: {str(e)}") from e
 
     def _is_newer_version(self, latest, current):
         """Compare version strings (e.g., '1.2.3' vs '1.2.2')."""
@@ -104,9 +103,8 @@ class Updater:
         try:
             # Create temp file
             suffix = '.exe' if download_url.endswith('.exe') else '.zip'
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
-            temp_path = temp_file.name
-            temp_file.close()
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+                temp_path = temp_file.name
 
             # Download with progress
             def report_progress(block_num, block_size, total_size):
@@ -119,8 +117,8 @@ class Updater:
 
             return temp_path
 
-        except Exception as e:
-            raise Exception(f"Failed to download update: {str(e)}")
+        except (URLError, IOError, OSError) as e:
+            raise Exception(f"Failed to download update: {str(e)}") from e
 
     def install_update(self, downloaded_file):
         """
@@ -131,9 +129,8 @@ class Updater:
         if self.is_frozen and downloaded_file.endswith('.exe'):
             # Running as .exe - need to replace executable
             return self._install_exe_update(downloaded_file)
-        else:
-            # Running as Python script - use git
-            return self._install_git_update()
+        # Running as Python script - use git
+        return self._install_git_update()
 
     def _install_exe_update(self, new_exe_path):
         """
@@ -145,7 +142,8 @@ class Updater:
 
         if system == "Windows":
             # Create batch script to replace exe and restart
-            script_path = tempfile.NamedTemporaryFile(delete=False, suffix='.bat').name
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.bat') as script_file:
+                script_path = script_file.name
 
             script_content = f'''@echo off
 echo Updating Work Logger...
@@ -157,7 +155,7 @@ start "" "{current_exe}"
 del "%~f0"
 '''
 
-            with open(script_path, 'w') as f:
+            with open(script_path, 'w', encoding='utf-8') as f:
                 f.write(script_content)
 
             # Start the update script
@@ -166,11 +164,11 @@ del "%~f0"
 
             return True
 
-        else:
-            # Unix-like system (Linux/macOS)
-            script_path = tempfile.NamedTemporaryFile(delete=False, suffix='.sh').name
+        # Unix-like system (Linux/macOS)
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.sh') as script_file:
+            script_path = script_file.name
 
-            script_content = f'''#!/bin/bash
+        script_content = f'''#!/bin/bash
 sleep 2
 cp "{new_exe_path}" "{current_exe}"
 chmod +x "{current_exe}"
@@ -179,24 +177,28 @@ rm "{new_exe_path}"
 rm "$0"
 '''
 
-            with open(script_path, 'w') as f:
-                f.write(script_content)
+        with open(script_path, 'w', encoding='utf-8') as f:
+            f.write(script_content)
 
-            os.chmod(script_path, 0o755)
+        os.chmod(script_path, 0o755)
 
-            subprocess.Popen(['/bin/bash', script_path])
+        subprocess.Popen(['/bin/bash', script_path])
 
-            return True
+        return True
 
     def _install_git_update(self):
         """Use git pull to update the application (for Python script mode)."""
         try:
             # Check if we're in a git repository
-            result = subprocess.run(['git', 'rev-parse', '--git-dir'],
-                                  capture_output=True, text=True)
+            result = subprocess.run(
+                ['git', 'rev-parse', '--git-dir'],
+                capture_output=True, text=True, check=False
+            )
 
             if result.returncode != 0:
-                raise Exception("Not in a git repository. Please download manually from GitHub.")
+                raise RuntimeError(
+                    "Not in a git repository. Please download manually from GitHub."
+                )
 
             # Fetch and pull latest changes
             subprocess.run(['git', 'fetch', 'origin'], check=True, capture_output=True)
@@ -205,6 +207,8 @@ rm "$0"
             return True
 
         except subprocess.CalledProcessError as e:
-            raise Exception(f"Git update failed: {str(e)}")
-        except FileNotFoundError:
-            raise Exception("Git is not installed. Please install git or download manually from GitHub.")
+            raise RuntimeError(f"Git update failed: {str(e)}") from e
+        except FileNotFoundError as exc:
+            raise RuntimeError(
+                "Git is not installed. Please install git or download manually from GitHub."
+            ) from exc

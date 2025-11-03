@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
+# pylint: disable=too-many-lines
 """
 Work Logger - Track your hourly work tasks
 A desktop app that reminds you every hour to document what you've been working on.
 """
 
-import tkinter as tk
-from tkinter import ttk, messagebox, scrolledtext
+import tkinter as tk  # pylint: disable=import-error
+from tkinter import ttk, messagebox, scrolledtext  # pylint: disable=import-error
 import json
 import os
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from threading import Thread, Event
 import time
 
@@ -71,11 +72,10 @@ class Task:
 
         if hours > 0:
             return f"{hours}h {minutes}m"
-        else:
-            return f"{minutes}m"
+        return f"{minutes}m"
 
 
-class WorkLogger:
+class WorkLogger:  # pylint: disable=too-many-instance-attributes
     """Main application class for Work Logger."""
 
     LOGS_DIR = 'logs'
@@ -120,6 +120,7 @@ class WorkLogger:
 
         self.tasks = []
         self.current_task = None
+        self.task_line_map = {}
         self.reminder_interval = 60 * 60  # 60 minutes in seconds (configurable)
         self.reminder_thread = None
         self.stop_reminder = Event()
@@ -142,7 +143,7 @@ class WorkLogger:
         # Handle window close
         self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
 
-    def setup_ui(self):
+    def setup_ui(self):  # pylint: disable=too-many-locals,too-many-statements
         """Create the user interface."""
         # Configure custom styles
         style = ttk.Style()
@@ -555,7 +556,7 @@ class WorkLogger:
 
         self.start_new_task()
 
-    def update_ui(self):
+    def update_ui(self):  # pylint: disable=too-many-statements
         """Update the user interface with current task and history."""
         # Update current task display
         if self.current_task and not self.current_task.completed:
@@ -583,12 +584,24 @@ class WorkLogger:
         self.history_text.delete(1.0, tk.END)
 
         # Configure text tags for styling
-        self.history_text.tag_configure("task_name", font=('Segoe UI', 11, 'bold'), foreground=self.colors['text_dark'])
-        self.history_text.tag_configure("completed_status", foreground=self.colors['success'], font=('Segoe UI', 10, 'bold'))
-        self.history_text.tag_configure("progress_status", foreground=self.colors['warning'], font=('Segoe UI', 10, 'bold'))
-        self.history_text.tag_configure("time_info", foreground=self.colors['text_light'], font=('Segoe UI', 9))
-        self.history_text.tag_configure("duration_info", foreground=self.colors['info'], font=('Segoe UI', 9, 'bold'))
-        self.history_text.tag_configure("separator", foreground=self.colors['border'], font=('Segoe UI', 8))
+        self.history_text.tag_configure(
+            "task_name", font=('Segoe UI', 11, 'bold'), foreground=self.colors['text_dark']
+        )
+        self.history_text.tag_configure(
+            "completed_status", foreground=self.colors['success'], font=('Segoe UI', 10, 'bold')
+        )
+        self.history_text.tag_configure(
+            "progress_status", foreground=self.colors['warning'], font=('Segoe UI', 10, 'bold')
+        )
+        self.history_text.tag_configure(
+            "time_info", foreground=self.colors['text_light'], font=('Segoe UI', 9)
+        )
+        self.history_text.tag_configure(
+            "duration_info", foreground=self.colors['info'], font=('Segoe UI', 9, 'bold')
+        )
+        self.history_text.tag_configure(
+            "separator", foreground=self.colors['border'], font=('Segoe UI', 8)
+        )
         self.history_text.tag_configure("entry_bg", background='#ffffff', borderwidth=1, relief=tk.SOLID)
 
         # Store task line mapping for selection (including line count for each task)
@@ -664,7 +677,7 @@ class WorkLogger:
         for task_line, task_data in self.task_line_map.items():
             # Check if click is within task's lines using actual line count
             if task_line <= line_num < task_line + task_data['line_count']:
-                self.selected_task_index = task_data['task_index']
+                self.selected_task_index = task_data['task_index']  # pylint: disable=attribute-defined-outside-init
                 # Highlight the selection with exact dimensions
                 self.highlight_selected_task(task_line, task_data['line_count'])
                 return
@@ -775,7 +788,7 @@ class WorkLogger:
 
             # Remove task from list
             self.tasks.pop(self.selected_task_index)
-            self.selected_task_index = None
+            self.selected_task_index = None  # pylint: disable=attribute-defined-outside-init
 
             self.save_tasks()
             self.update_ui()
@@ -804,25 +817,29 @@ class WorkLogger:
                 'date': date_str,
                 'tasks': [task.to_dict() for task in day_tasks]
             }
-            with open(file_path, 'w') as f:
+            with open(file_path, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=2)
 
         # Save current task reference separately
         current_task_file = os.path.join(self.LOGS_DIR, 'current_task.json')
         current_data = {
-            'current_task': self.current_task.to_dict() if self.current_task and not self.current_task.completed else None
+            'current_task': (
+                self.current_task.to_dict()
+                if self.current_task and not self.current_task.completed
+                else None
+            )
         }
-        with open(current_task_file, 'w') as f:
+        with open(current_task_file, 'w', encoding='utf-8') as f:
             json.dump(current_data, f, indent=2)
 
-    def migrate_old_data(self):
+    def migrate_old_data(self):  # pylint: disable=too-many-locals
         """Migrate data from old work_log.json format to new daily files format."""
-        OLD_DATA_FILE = 'work_log.json'
+        old_data_file = 'work_log.json'
 
-        if os.path.exists(OLD_DATA_FILE):
+        if os.path.exists(old_data_file):
             try:
                 print("Migrating old data format to daily log files...")
-                with open(OLD_DATA_FILE, 'r') as f:
+                with open(old_data_file, 'r', encoding='utf-8') as f:
                     data = json.load(f)
 
                 tasks = [Task.from_dict(task_data) for task_data in data.get('tasks', [])]
@@ -844,7 +861,7 @@ class WorkLogger:
                             'date': date_str,
                             'tasks': [task.to_dict() for task in day_tasks]
                         }
-                        with open(file_path, 'w') as f:
+                        with open(file_path, 'w', encoding='utf-8') as f:
                             json.dump(file_data, f, indent=2)
 
                     # Handle current task
@@ -854,15 +871,15 @@ class WorkLogger:
                         if not current_task.completed:
                             current_task_file = os.path.join(self.LOGS_DIR, 'current_task.json')
                             current_data = {'current_task': current_task.to_dict()}
-                            with open(current_task_file, 'w') as f:
+                            with open(current_task_file, 'w', encoding='utf-8') as f:
                                 json.dump(current_data, f, indent=2)
 
                 # Rename old file to backup
                 backup_file = 'work_log.json.backup'
-                os.rename(OLD_DATA_FILE, backup_file)
+                os.rename(old_data_file, backup_file)
                 print(f"Migration complete! Old file backed up to {backup_file}")
 
-            except Exception as e:
+            except (FileNotFoundError, json.JSONDecodeError, KeyError, OSError) as e:
                 print(f"Error during migration: {e}")
 
     def load_tasks(self):
@@ -880,11 +897,11 @@ class WorkLogger:
                 # Load today's tasks if the file exists
                 if os.path.exists(today_file_path):
                     try:
-                        with open(today_file_path, 'r') as f:
+                        with open(today_file_path, 'r', encoding='utf-8') as f:
                             data = json.load(f)
                             tasks = [Task.from_dict(task_data) for task_data in data.get('tasks', [])]
                             self.tasks.extend(tasks)
-                    except Exception as e:
+                    except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
                         print(f"Error loading {today_file}: {e}")
 
                 # Sort tasks by start time
@@ -893,7 +910,7 @@ class WorkLogger:
                 # Load current task reference
                 current_task_file = os.path.join(self.LOGS_DIR, 'current_task.json')
                 if os.path.exists(current_task_file):
-                    with open(current_task_file, 'r') as f:
+                    with open(current_task_file, 'r', encoding='utf-8') as f:
                         current_data = json.load(f)
                         current_task_dict = current_data.get('current_task')
                         if current_task_dict:
@@ -905,7 +922,7 @@ class WorkLogger:
                                         self.current_task = task
                                     break
 
-            except Exception as e:
+            except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
                 messagebox.showerror("Load Error", f"Error loading tasks: {e}")
 
     def start_reminder_timer(self):
@@ -926,7 +943,7 @@ class WorkLogger:
             # Show reminder
             self.root.after(0, self.show_reminder)
 
-    def show_reminder(self):
+    def show_reminder(self):  # pylint: disable=too-many-locals,too-many-statements
         """Show reminder popup to log work."""
         reminder_window = tk.Toplevel(self.root)
         reminder_window.title("Work Logger Reminder")
@@ -1169,7 +1186,7 @@ class WorkLogger:
 
                 progress_window.after(0, update_ui_with_result)
 
-            except Exception as e:
+            except (RuntimeError, OSError, ValueError) as e:
                 def show_error():
                     progress_bar.stop()
                     progress_window.destroy()
@@ -1226,7 +1243,7 @@ class WorkLogger:
                     f"Would you like to open the GitHub releases page to download v{latest_version} manually?"
                 )
                 if response:
-                    import webbrowser
+                    import webbrowser  # pylint: disable=import-outside-toplevel
                     webbrowser.open(f"https://github.com/{updater.GITHUB_REPO}/releases/latest")
 
         # Buttons
@@ -1299,7 +1316,7 @@ class WorkLogger:
 
                 progress_window.after(0, show_success)
 
-            except Exception as e:
+            except (RuntimeError, OSError, ValueError) as e:
                 def show_error():
                     progress_window.destroy()
                     messagebox.showerror("Update Failed", f"Failed to install update: {str(e)}")
@@ -1330,7 +1347,7 @@ class WorkLogger:
             )
             if response is None:  # Cancel
                 return
-            elif response:  # Yes
+            if response:  # Yes
                 self.current_task.complete()
                 self.save_tasks()
 
@@ -1344,7 +1361,7 @@ class WorkLogger:
 def main():
     """Main entry point for the application."""
     root = tk.Tk()
-    app = WorkLogger(root)
+    app = WorkLogger(root)  # pylint: disable=unused-variable
     root.mainloop()
 
 

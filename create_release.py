@@ -19,11 +19,10 @@ Or make it executable and run:
 import subprocess
 import sys
 import re
-import os
 from pathlib import Path
 
 
-class ReleaseAutomation:
+class ReleaseAutomation:  # pylint: disable=too-few-public-methods
     """Handles automated release creation for Work Logger."""
 
     def __init__(self):
@@ -39,7 +38,7 @@ class ReleaseAutomation:
                 match = re.search(r'VERSION\s*=\s*["\']([^"\']+)["\']', content)
                 if match:
                     return match.group(1)
-        except Exception as e:
+        except (FileNotFoundError, PermissionError, IOError) as e:
             print(f"Error reading current version: {e}")
         return None
 
@@ -61,7 +60,7 @@ class ReleaseAutomation:
 
             print(f"✓ Updated VERSION to {new_version} in work_logger.py")
             return True
-        except Exception as e:
+        except (FileNotFoundError, PermissionError, IOError) as e:
             print(f"✗ Error updating version: {e}")
             return False
 
@@ -121,8 +120,7 @@ class ReleaseAutomation:
             new_version = input("Enter new version number (e.g., 1.1.0): ").strip()
             if self._validate_version(new_version):
                 break
-            else:
-                print("Invalid version format. Use MAJOR.MINOR.PATCH (e.g., 1.1.0)")
+            print("Invalid version format. Use MAJOR.MINOR.PATCH (e.g., 1.1.0)")
 
         # Get release notes
         print("\nEnter release notes (you can use markdown formatting):")
@@ -140,9 +138,6 @@ class ReleaseAutomation:
             except EOFError:
                 # Handle Ctrl+D on Unix or Ctrl+Z on Windows
                 break
-            except KeyboardInterrupt:
-                # Handle Ctrl+C
-                raise
 
         release_notes = '\n'.join(release_notes).strip()
 
@@ -161,7 +156,8 @@ class ReleaseAutomation:
             # Check if there are changes to commit
             result = subprocess.run(
                 ['git', 'diff', '--cached', '--quiet'],
-                capture_output=True
+                capture_output=True,
+                check=False
             )
 
             if result.returncode == 0:
@@ -171,12 +167,18 @@ class ReleaseAutomation:
 
             # Commit
             commit_message = f"Bump version to {version}"
-            subprocess.run(['git', 'commit', '-m', commit_message], check=True, capture_output=True, text=True)
-            print(f"✓ Committed version change")
+            subprocess.run(
+                ['git', 'commit', '-m', commit_message],
+                check=True, capture_output=True, text=True
+            )
+            print("✓ Committed version change")
 
             # Push to main
-            subprocess.run(['git', 'push', 'origin', 'main'], check=True, capture_output=True, text=True)
-            print(f"✓ Pushed to origin/main")
+            subprocess.run(
+                ['git', 'push', 'origin', 'main'],
+                check=True, capture_output=True, text=True
+            )
+            print("✓ Pushed to origin/main")
 
             return True
         except subprocess.CalledProcessError as e:
@@ -197,7 +199,7 @@ class ReleaseAutomation:
                 '--notes', release_notes
             ]
 
-            result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+            subprocess.run(cmd, check=True, capture_output=True, text=True)
             print(f"✓ Created GitHub release: {tag}")
             print()
             print("GitHub Actions is now building executables...")
@@ -212,10 +214,10 @@ class ReleaseAutomation:
         except subprocess.CalledProcessError as e:
             print(f"✗ Failed to create release: {e}")
             if e.stderr:
-                print(f"\nError output:")
+                print("\nError output:")
                 print(e.stderr)
             if e.stdout:
-                print(f"\nStandard output:")
+                print("\nStandard output:")
                 print(e.stdout)
             print("\nPossible issues:")
             print("  1. GitHub CLI (gh) not authenticated - run: gh auth login")
@@ -223,7 +225,7 @@ class ReleaseAutomation:
             print("  3. Tag might already exist - check: gh release list")
             return False
 
-    def create_release(self):
+    def create_release(self):  # pylint: disable=too-many-return-statements
         """Main function to orchestrate the release process."""
         # Check prerequisites
         if not self._check_gh_cli():
@@ -267,7 +269,7 @@ class ReleaseAutomation:
         # Step 2: Commit and push
         if not self._commit_and_push(new_version):
             print("\nRolling back version change...")
-            subprocess.run(['git', 'restore', str(self.work_logger_path)])
+            subprocess.run(['git', 'restore', str(self.work_logger_path)], check=False)
             return False
 
         # Step 3: Create GitHub release
@@ -292,7 +294,7 @@ def main():
     except KeyboardInterrupt:
         print("\n\nRelease cancelled by user.")
         sys.exit(1)
-    except Exception as e:
+    except (OSError, RuntimeError) as e:
         print(f"\n✗ Unexpected error: {e}")
         sys.exit(1)
 
