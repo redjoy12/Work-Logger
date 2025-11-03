@@ -54,7 +54,7 @@ class Updater:
             return True, latest_version, download_url, release_notes
 
         except (URLError, json.JSONDecodeError, KeyError) as e:
-            raise Exception(f"Failed to check for updates: {str(e)}") from e
+            raise RuntimeError(f"Failed to check for updates: {str(e)}") from e
 
     def _is_newer_version(self, latest, current):
         """Compare version strings (e.g., '1.2.3' vs '1.2.2')."""
@@ -118,7 +118,7 @@ class Updater:
             return temp_path
 
         except (URLError, IOError, OSError) as e:
-            raise Exception(f"Failed to download update: {str(e)}") from e
+            raise RuntimeError(f"Failed to download update: {str(e)}") from e
 
     def install_update(self, downloaded_file):
         """
@@ -159,8 +159,9 @@ del "%~f0"
                 f.write(script_content)
 
             # Start the update script
-            subprocess.Popen(['cmd.exe', '/c', script_path],
-                           creationflags=subprocess.CREATE_NO_WINDOW)
+            with subprocess.Popen(['cmd.exe', '/c', script_path],
+                                creationflags=subprocess.CREATE_NO_WINDOW):
+                pass
 
             return True
 
@@ -182,7 +183,8 @@ rm "$0"
 
         os.chmod(script_path, 0o755)
 
-        subprocess.Popen(['/bin/bash', script_path])
+        with subprocess.Popen(['/bin/bash', script_path]):
+            pass
 
         return True
 
