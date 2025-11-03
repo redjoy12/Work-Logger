@@ -11,14 +11,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed fullscreen UI centering and modernized reminder window for better user experience
 - Fixed all pylint issues across Python files for improved code quality
 - Resolved remaining pylint issues in updater.py and work_logger.py
+- Fixed automatic update functionality to properly detect Python script mode vs frozen executable
+- Fixed issue where "Install Update" button would show manual update prompt even when running from git repository
 
 ### Improved
 - Improved work history entry clarity with better selection overlay
 - Enhanced code quality with comprehensive linting fixes
+- Improved update experience with proper progress indicators for git-based updates
+- Enhanced update logic to use git pull when running as Python script
 
 ### Added
 - Added Bandit security scan workflow to GitHub Actions for automated security checks
 - Updated Python versions in pylint workflow to ensure compatibility
+- Added automatic git-based update functionality for Python script mode
+- Added `_install_git_update()` method to handle updates when running from source
 
 ## [1.0.3] - 2025-11-03
 
