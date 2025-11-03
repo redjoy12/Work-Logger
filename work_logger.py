@@ -1408,7 +1408,8 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
 
                 progress_window.after(0, show_success)
 
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                # Catch all exceptions to show user-friendly error message
                 def show_error():
                     progress_bar.stop()
                     progress_window.destroy()
