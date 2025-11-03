@@ -279,8 +279,10 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
         ).grid(row=1, column=0, sticky=tk.W, pady=(0, 8))
 
         # Custom styled entry
-        entry_frame = tk.Frame(new_task_inner, bg='white', highlightbackground=self.colors['border'],
-                              highlightthickness=2, highlightcolor=self.colors['primary'])
+        entry_frame = tk.Frame(
+            new_task_inner, bg='white', highlightbackground=self.colors['border'],
+            highlightthickness=2, highlightcolor=self.colors['primary']
+        )
         entry_frame.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=(0, 15))
 
         self.task_entry = tk.Entry(
@@ -311,8 +313,12 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
             bd=0
         )
         self.start_btn.grid(row=0, column=0, padx=(0, 10))
-        self.start_btn.bind('<Enter>', lambda e: self.start_btn.config(bg=self.colors['primary_dark']))
-        self.start_btn.bind('<Leave>', lambda e: self.start_btn.config(bg=self.colors['primary']))
+        self.start_btn.bind(
+            '<Enter>', lambda e: self.start_btn.config(bg=self.colors['primary_dark'])
+        )
+        self.start_btn.bind(
+            '<Leave>', lambda e: self.start_btn.config(bg=self.colors['primary'])
+        )
 
         self.finish_only_btn = tk.Button(
             button_frame,
@@ -443,8 +449,10 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
         ).grid(row=0, column=0, sticky=tk.W, padx=(0, 10))
 
         self.interval_var = tk.StringVar(value="60")
-        interval_frame = tk.Frame(settings_inner, bg='white', highlightbackground=self.colors['border'],
-                                 highlightthickness=1)
+        interval_frame = tk.Frame(
+            settings_inner, bg='white', highlightbackground=self.colors['border'],
+            highlightthickness=1
+        )
         interval_frame.grid(row=0, column=1, padx=(0, 10))
 
         interval_spinbox = tk.Spinbox(
@@ -602,7 +610,9 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
         self.history_text.tag_configure(
             "separator", foreground=self.colors['border'], font=('Segoe UI', 8)
         )
-        self.history_text.tag_configure("entry_bg", background='#ffffff', borderwidth=1, relief=tk.SOLID)
+        self.history_text.tag_configure(
+            "entry_bg", background='#ffffff', borderwidth=1, relief=tk.SOLID
+        )
 
         # Store task line mapping for selection (including line count for each task)
         self.task_line_map = {}
@@ -613,7 +623,7 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
             for i, task in enumerate(reversed(self.tasks), 1):
                 # Store the starting line number for this task
                 line_start_index = self.history_text.index(tk.INSERT)
-                line_start = int(line_start_index.split('.')[0])
+                line_start = int(line_start_index.split('.', maxsplit=1)[0])
                 actual_index = len(self.tasks) - i  # Index in self.tasks list
 
                 start = datetime.fromisoformat(task.start_time)
@@ -671,7 +681,7 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
         """Handle clicks in history text to select tasks."""
         # Get the line number that was clicked
         index = self.history_text.index(f"@{event.x},{event.y}")
-        line_num = int(index.split('.')[0])
+        line_num = int(index.split('.', maxsplit=1)[0])
 
         # Find which task this line belongs to
         for task_line, task_data in self.task_line_map.items():
@@ -688,7 +698,9 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
         # Highlight only the task content, excluding the separator
         # Subtract separator lines if present (3 lines: blank + separator + blank)
         highlight_lines = line_count - 3 if line_count > 4 else line_count - 1
-        self.history_text.tag_add("highlight", f"{start_line}.0", f"{start_line + highlight_lines}.0")
+        self.history_text.tag_add(
+            "highlight", f"{start_line}.0", f"{start_line + highlight_lines}.0"
+        )
         self.history_text.tag_config("highlight",
                                     background='#e3f2fd',
                                     borderwidth=2,
@@ -716,20 +728,26 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
         frame.pack(fill=tk.BOTH, expand=True)
 
         # Task description
-        ttk.Label(frame, text="Task Description:", font=("Arial", 10, "bold")).pack(anchor=tk.W, pady=(0, 5))
+        ttk.Label(
+            frame, text="Task Description:", font=("Arial", 10, "bold")
+        ).pack(anchor=tk.W, pady=(0, 5))
         desc_text = scrolledtext.ScrolledText(frame, height=5, wrap=tk.WORD)
         desc_text.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
         desc_text.insert(tk.END, task.description)
 
         # Start time
-        ttk.Label(frame, text="Start Time:", font=("Arial", 10, "bold")).pack(anchor=tk.W, pady=(0, 5))
+        ttk.Label(
+            frame, text="Start Time:", font=("Arial", 10, "bold")
+        ).pack(anchor=tk.W, pady=(0, 5))
         start_var = tk.StringVar(value=task.start_time)
         start_entry = ttk.Entry(frame, textvariable=start_var, width=40)
         start_entry.pack(anchor=tk.W, pady=(0, 10))
 
         # End time (if completed)
         if task.completed:
-            ttk.Label(frame, text="End Time:", font=("Arial", 10, "bold")).pack(anchor=tk.W, pady=(0, 5))
+            ttk.Label(
+                frame, text="End Time:", font=("Arial", 10, "bold")
+            ).pack(anchor=tk.W, pady=(0, 5))
             end_var = tk.StringVar(value=task.end_time or "")
             end_entry = ttk.Entry(frame, textvariable=end_var, width=40)
             end_entry.pack(anchor=tk.W, pady=(0, 10))
@@ -746,7 +764,10 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
                 if task.completed and end_var.get():
                     datetime.fromisoformat(end_var.get())
             except ValueError:
-                messagebox.showerror("Invalid Time", "Invalid timestamp format. Use ISO format: YYYY-MM-DD HH:MM")
+                messagebox.showerror(
+                    "Invalid Time",
+                    "Invalid timestamp format. Use ISO format: YYYY-MM-DD HH:MM"
+                )
                 return
 
             # Update task
@@ -899,7 +920,10 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
                     try:
                         with open(today_file_path, 'r', encoding='utf-8') as f:
                             data = json.load(f)
-                            tasks = [Task.from_dict(task_data) for task_data in data.get('tasks', [])]
+                            tasks = [
+                                Task.from_dict(task_data)
+                                for task_data in data.get('tasks', [])
+                            ]
                             self.tasks.extend(tasks)
                     except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
                         print(f"Error loading {today_file}: {e}")
@@ -1021,7 +1045,10 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
             insertbackground=self.colors['primary']
         )
         entry.pack(fill=tk.X, ipady=8, ipadx=10)
-        entry.configure(highlightbackground=self.colors['border'], highlightcolor=self.colors['primary'])
+        entry.configure(
+            highlightbackground=self.colors['border'],
+            highlightcolor=self.colors['primary']
+        )
         entry.focus()
 
         def log_task():
@@ -1169,7 +1196,8 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
             """Background thread to check for updates."""
             try:
                 updater = Updater(VERSION)
-                is_available, latest_version, download_url, release_notes = updater.check_for_updates()
+                (is_available, latest_version,
+                 download_url, release_notes) = updater.check_for_updates()
 
                 def update_ui_with_result():
                     progress_bar.stop()
@@ -1177,7 +1205,9 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
 
                     if is_available:
                         # Show update available dialog
-                        self._show_update_dialog(latest_version, download_url, release_notes, updater)
+                        self._show_update_dialog(
+                            latest_version, download_url, release_notes, updater
+                        )
                     else:
                         messagebox.showinfo(
                             "No Updates Available",
@@ -1222,7 +1252,9 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
         ).pack(pady=(0, 20))
 
         # Release notes
-        ttk.Label(frame, text="Release Notes:", font=("Arial", 10, "bold")).pack(anchor=tk.W, pady=(0, 5))
+        ttk.Label(
+            frame, text="Release Notes:", font=("Arial", 10, "bold")
+        ).pack(anchor=tk.W, pady=(0, 5))
 
         notes_text = scrolledtext.ScrolledText(frame, height=10, wrap=tk.WORD)
         notes_text.pack(fill=tk.BOTH, expand=True, pady=(0, 20))
@@ -1240,7 +1272,8 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
                 response = messagebox.askyesno(
                     "Manual Update Required",
                     "Automatic update is not available for your platform.\n\n"
-                    f"Would you like to open the GitHub releases page to download v{latest_version} manually?"
+                    f"Would you like to open the GitHub releases page to download "
+                    f"v{latest_version} manually?"
                 )
                 if response:
                     import webbrowser  # pylint: disable=import-outside-toplevel
@@ -1250,7 +1283,9 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
         btn_frame = ttk.Frame(frame)
         btn_frame.pack()
 
-        ttk.Button(btn_frame, text="Install Update", command=install_update).pack(side=tk.LEFT, padx=5)
+        ttk.Button(
+            btn_frame, text="Install Update", command=install_update
+        ).pack(side=tk.LEFT, padx=5)
         ttk.Button(btn_frame, text="Later", command=dialog.destroy).pack(side=tk.LEFT, padx=5)
 
     def _download_and_install_update(self, download_url, updater):
@@ -1269,7 +1304,9 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
         status_label.pack(pady=(0, 20))
 
         progress_var = tk.IntVar(value=0)
-        progress_bar = ttk.Progressbar(frame, mode='determinate', length=300, variable=progress_var, maximum=100)
+        progress_bar = ttk.Progressbar(
+            frame, mode='determinate', length=300, variable=progress_var, maximum=100
+        )
         progress_bar.pack()
 
         def update_progress(percent):
@@ -1281,7 +1318,9 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
             """Background thread to download and install update."""
             try:
                 # Download
-                downloaded_file = updater.download_update(download_url, progress_callback=update_progress)
+                downloaded_file = updater.download_update(
+                    download_url, progress_callback=update_progress
+                )
 
                 def install_phase():
                     status_label.config(text="Installing update...")
