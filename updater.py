@@ -67,11 +67,16 @@ class Updater:
             return False
 
     def _get_download_url(self, assets):
-        """Get the appropriate download URL for current platform and execution mode."""
+        """
+        Get the appropriate download URL for current platform and execution mode.
+
+        Returns None if no suitable download is found for the platform.
+        This allows the caller to try alternative update methods (e.g., git update).
+        """
         system = platform.system()
 
         if self.is_frozen:
-            # Running as executable - download executable
+            # Running as executable - look for platform-specific binary
             if system == "Windows":
                 # Look for .exe file
                 for asset in assets:
@@ -88,11 +93,8 @@ class Updater:
                     if 'linux' in asset['name'].lower() and not asset['name'].endswith('.exe'):
                         return asset['browser_download_url']
 
-        # Fallback: return source code archive or None
-        for asset in assets:
-            if asset['name'] == 'Source code (zip)':
-                return asset['zipball_url']
-
+        # For Python script mode, source archives aren't useful for auto-update
+        # Return None to allow git-based updates
         return None
 
     def download_update(self, download_url, progress_callback=None):
