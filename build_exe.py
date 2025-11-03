@@ -13,7 +13,7 @@ import shutil
 def check_pyinstaller():
     """Check if PyInstaller is installed, install if not."""
     try:
-        import PyInstaller
+        import PyInstaller  # pylint: disable=import-outside-toplevel,unused-import
         print("✓ PyInstaller is installed")
         return True
     except ImportError:
@@ -63,7 +63,7 @@ def build_executable():
             exe_path = os.path.join("dist", "WorkLogger")
 
         if os.path.exists(exe_path):
-            print(f"\nYour executable is located at:")
+            print("\nYour executable is located at:")
             print(f"  {os.path.abspath(exe_path)}")
             print("\nYou can now run the application by:")
             if sys.platform == "win32":
@@ -81,7 +81,7 @@ def build_executable():
         return False
 
 if __name__ == "__main__":
-    success = build_executable()
+    success = build_executable()  # pylint: disable=invalid-name
 
     if not success:
         print("\nBuild failed. Please check the error messages above.")
