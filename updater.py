@@ -8,6 +8,7 @@ import sys
 import json
 import subprocess
 import platform
+import shutil
 from urllib import request
 from urllib.error import URLError
 import tempfile
@@ -171,7 +172,11 @@ del "%~f0"
         with tempfile.NamedTemporaryFile(delete=False, suffix='.sh') as script_file:
             script_path = script_file.name
 
-        script_content = f'''#!/bin/bash
+        # Try to find bash, fallback to sh for maximum compatibility
+        shell_path = shutil.which('bash') or shutil.which('sh') or '/bin/sh'
+
+        # Use sh-compatible syntax (works with both sh and bash)
+        script_content = f'''#!/bin/sh
 sleep 2
 cp "{new_exe_path}" "{current_exe}"
 chmod +x "{current_exe}"
@@ -185,7 +190,7 @@ rm "$0"
 
         os.chmod(script_path, 0o755)
 
-        with subprocess.Popen(['/bin/bash', script_path]):
+        with subprocess.Popen([shell_path, script_path]):
             pass
 
         return True
@@ -196,7 +201,7 @@ rm "$0"
             # Check if we're in a git repository
             result = subprocess.run(
                 ['git', 'rev-parse', '--git-dir'],
-                capture_output=True, text=True, check=False
+                capture_output=True, text=True, check=False, timeout=10
             )
 
             if result.returncode != 0:
@@ -204,14 +209,23 @@ rm "$0"
                     "Not in a git repository. Please download manually from GitHub."
                 )
 
-            # Fetch and pull latest changes
-            subprocess.run(['git', 'fetch', 'origin'], check=True, capture_output=True)
-            subprocess.run(['git', 'pull', 'origin', 'main'], check=True, capture_output=True)
+            # Get current branch name dynamically
+            branch_result = subprocess.run(
+                ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+                capture_output=True, text=True, check=True, timeout=10
+            )
+            current_branch = branch_result.stdout.strip()
+
+            # Fetch and pull latest changes from the current branch
+            subprocess.run(['git', 'fetch', 'origin'], check=True, capture_output=True, timeout=30)
+            subprocess.run(['git', 'pull', 'origin', current_branch], check=True, capture_output=True, timeout=30)
 
             return True
 
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Git update failed: {str(e)}") from e
+        except subprocess.TimeoutExpired as e:
+            raise RuntimeError(f"Git operation timed out: {str(e)}") from e
         except FileNotFoundError as exc:
             raise RuntimeError(
                 "Git is not installed. Please install git or download manually from GitHub."
