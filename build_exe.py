@@ -10,10 +10,11 @@ import sys
 import os
 import shutil
 
+
 def check_pyinstaller():
     """Check if PyInstaller is installed, install if not."""
     try:
-        import PyInstaller  # pylint: disable=import-outside-toplevel,unused-import
+        import PyInstaller  # pylint: disable=import-outside-toplevel,unused-import  # noqa: F401
         print("✓ PyInstaller is installed")
         return True
     except ImportError:
@@ -26,6 +27,7 @@ def check_pyinstaller():
             print("✗ Failed to install PyInstaller")
             return False
 
+
 def clean_build_dirs():
     """Clean previous build directories."""
     dirs_to_clean = ['build', 'dist']
@@ -33,6 +35,7 @@ def clean_build_dirs():
         if os.path.exists(dir_name):
             print(f"Cleaning {dir_name} directory...")
             shutil.rmtree(dir_name)
+
 
 def build_executable():
     """Build the executable using PyInstaller."""
@@ -79,6 +82,7 @@ def build_executable():
     except subprocess.CalledProcessError as e:
         print(f"\n✗ Build failed with error: {e}")
         return False
+
 
 if __name__ == "__main__":
     success = build_executable()  # pylint: disable=invalid-name

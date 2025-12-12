@@ -163,7 +163,7 @@ del "%~f0"
 
             # Start the update script
             with subprocess.Popen(['cmd.exe', '/c', script_path],
-                                creationflags=subprocess.CREATE_NO_WINDOW):
+                                  creationflags=subprocess.CREATE_NO_WINDOW):
                 pass
 
             return True
