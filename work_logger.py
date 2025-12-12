@@ -153,38 +153,38 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
 
         # Configure custom button styles
         style.configure('Primary.TButton',
-                       background=self.colors['primary'],
-                       foreground='white',
-                       borderwidth=0,
-                       focuscolor='none',
-                       padding=(20, 10),
-                       font=('Segoe UI', 10, 'bold'))
+                        background=self.colors['primary'],
+                        foreground='white',
+                        borderwidth=0,
+                        focuscolor='none',
+                        padding=(20, 10),
+                        font=('Segoe UI', 10, 'bold'))
         style.map('Primary.TButton',
-                 background=[('active', self.colors['primary_dark'])])
+                  background=[('active', self.colors['primary_dark'])])
 
         style.configure('Secondary.TButton',
-                       background=self.colors['secondary'],
-                       foreground='white',
-                       borderwidth=0,
-                       focuscolor='none',
-                       padding=(15, 8),
-                       font=('Segoe UI', 9, 'bold'))
+                        background=self.colors['secondary'],
+                        foreground='white',
+                        borderwidth=0,
+                        focuscolor='none',
+                        padding=(15, 8),
+                        font=('Segoe UI', 9, 'bold'))
         style.map('Secondary.TButton',
-                 background=[('active', self.colors['success'])])
+                  background=[('active', self.colors['success'])])
 
         style.configure('Danger.TButton',
-                       background=self.colors['danger'],
-                       foreground='white',
-                       borderwidth=0,
-                       focuscolor='none',
-                       padding=(15, 8),
-                       font=('Segoe UI', 9, 'bold'))
+                        background=self.colors['danger'],
+                        foreground='white',
+                        borderwidth=0,
+                        focuscolor='none',
+                        padding=(15, 8),
+                        font=('Segoe UI', 9, 'bold'))
 
         style.configure('Custom.TEntry',
-                       fieldbackground='white',
-                       borderwidth=2,
-                       relief='solid',
-                       padding=10)
+                        fieldbackground='white',
+                        borderwidth=2,
+                        relief='solid',
+                        padding=10)
 
         # Main container with padding
         main_frame = tk.Frame(self.root, bg=self.colors['bg'], padx=20, pady=20)
@@ -707,14 +707,14 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
             "highlight", f"{start_line}.0", f"{start_line + highlight_lines}.0"
         )
         self.history_text.tag_config("highlight",
-                                    background='#e3f2fd',
-                                    borderwidth=2,
-                                    relief=tk.SOLID,
-                                    spacing1=5,
-                                    spacing3=5,
-                                    lmargin1=10,
-                                    lmargin2=10,
-                                    rmargin=10)
+                                     background='#e3f2fd',
+                                     borderwidth=2,
+                                     relief=tk.SOLID,
+                                     spacing1=5,
+                                     spacing3=5,
+                                     lmargin1=10,
+                                     lmargin2=10,
+                                     rmargin=10)
 
     def edit_task(self):
         """Edit the selected task."""
@@ -946,7 +946,7 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
                             # Find the current task in the loaded tasks
                             for task in self.tasks:
                                 if (task.start_time == current_task_dict['start_time'] and
-                                    task.description == current_task_dict['description']):
+                                        task.description == current_task_dict['description']):
                                     if not task.completed:
                                         self.current_task = task
                                     break
@@ -1222,10 +1222,12 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
                 progress_window.after(0, update_ui_with_result)
 
             except (RuntimeError, OSError, ValueError) as e:
+                error_message = str(e)
+
                 def show_error():
                     progress_bar.stop()
                     progress_window.destroy()
-                    messagebox.showerror("Update Check Failed", str(e))
+                    messagebox.showerror("Update Check Failed", error_message)
 
                 progress_window.after(0, show_error)
 
@@ -1367,9 +1369,14 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
                 progress_window.after(0, show_success)
 
             except (RuntimeError, OSError, ValueError) as e:
+                error_message = str(e)
+
                 def show_error():
                     progress_window.destroy()
-                    messagebox.showerror("Update Failed", f"Failed to install update: {str(e)}")
+                    messagebox.showerror(
+                        "Update Failed",
+                        f"Failed to install update: {error_message}"
+                    )
 
                 progress_window.after(0, show_error)
 
@@ -1417,10 +1424,15 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
 
             except Exception as e:  # pylint: disable=broad-exception-caught
                 # Catch all exceptions to show user-friendly error message
+                error_message = str(e)
+
                 def show_error():
                     progress_bar.stop()
                     progress_window.destroy()
-                    messagebox.showerror("Update Failed", f"Failed to install update: {str(e)}")
+                    messagebox.showerror(
+                        "Update Failed",
+                        f"Failed to install update: {error_message}"
+                    )
 
                 progress_window.after(0, show_error)
 
@@ -1476,7 +1488,7 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
 def main():
     """Main entry point for the application."""
     root = tk.Tk()
-    app = WorkLogger(root)  # pylint: disable=unused-variable
+    app = WorkLogger(root)  # pylint: disable=unused-variable  # noqa: F841
     root.mainloop()
 
 
