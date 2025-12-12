@@ -217,8 +217,10 @@ rm "$0"
             current_branch = branch_result.stdout.strip()
 
             # Fetch and pull latest changes from the current branch
-            subprocess.run(['git', 'fetch', 'origin'], check=True, capture_output=True, timeout=30)
-            subprocess.run(['git', 'pull', 'origin', current_branch], check=True, capture_output=True, timeout=30)
+            subprocess.run(['git', 'fetch', 'origin'],
+                           check=True, capture_output=True, timeout=30)
+            subprocess.run(['git', 'pull', 'origin', current_branch],
+                           check=True, capture_output=True, timeout=30)
 
             return True
 

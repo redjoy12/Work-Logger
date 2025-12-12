@@ -1373,7 +1373,10 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
 
                 def show_error():
                     progress_window.destroy()
-                    messagebox.showerror("Update Failed", f"Failed to install update: {error_message}")
+                    messagebox.showerror(
+                        "Update Failed",
+                        f"Failed to install update: {error_message}"
+                    )
 
                 progress_window.after(0, show_error)
 
@@ -1426,7 +1429,10 @@ class WorkLogger:  # pylint: disable=too-many-instance-attributes
                 def show_error():
                     progress_bar.stop()
                     progress_window.destroy()
-                    messagebox.showerror("Update Failed", f"Failed to install update: {error_message}")
+                    messagebox.showerror(
+                        "Update Failed",
+                        f"Failed to install update: {error_message}"
+                    )
 
                 progress_window.after(0, show_error)
 
